@@ -1,0 +1,37 @@
+.info {
+  display: flex;
+  padding: 12px 16px;
+  max-width: 68ch;
+  border-radius: var(--radius);
+  background-color: var(--accentTint);
+  color: var(--inkSoft);
+  font-size: 14px;
+  gap: 12px;
+}
+
+.warning {
+  composes: info;
+
+  background-color: var(--warningTint);
+
+  .icon {
+    color: var(--warningColor);
+  }
+}
+
+.icon {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  color: var(--accentText);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  color: var(--ink);
+  font-weight: 600;
+}

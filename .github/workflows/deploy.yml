@@ -1,0 +1,89 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 1 * *'
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-id: ${{ steps.site.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Cache Sonarr source
+        uses: actions/cache@v4
+        with:
+          path: .cache/sonarr
+          key: sonarr-${{ hashFiles('scripts/buildDemo.mts') }}
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn build
+
+      - id: site
+        if: github.event_name != 'pull_request' && vars.DEPLOY_TARGET == 'cloudflare'
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: _site
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload GitHub Pages artifact
+        if: github.event_name != 'pull_request' && vars.DEPLOY_TARGET == 'github'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+          retention-days: 1
+
+  deploy-github:
+    needs: build
+    if: github.event_name != 'pull_request' && vars.DEPLOY_TARGET == 'github'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-cloudflare:
+    needs: build
+    if: github.event_name != 'pull_request' && vars.DEPLOY_TARGET == 'cloudflare'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: _site
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site --project-name=${{ vars.CLOUDFLARE_PROJECT }} --branch=main
+
+      - name: Delete site artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method DELETE "repos/${{ github.repository }}/actions/artifacts/${{ needs.build.outputs.artifact-id }}"

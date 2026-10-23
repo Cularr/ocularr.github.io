@@ -1,0 +1,62 @@
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 16px 9px 14px;
+  border: 1px solid var(--hairlineStrong);
+  border-radius: var(--radius);
+  background-color: var(--paperRaised);
+  color: var(--ink);
+  transition:
+    border-color var(--transitionSmooth),
+    background-color var(--transitionSmooth);
+  gap: 12px;
+
+  &:hover {
+    border-color: var(--accent);
+    background-color: var(--accentTint);
+    color: var(--ink);
+    text-decoration: none;
+  }
+}
+
+.primary {
+  composes: link;
+
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--accentInk);
+
+  &:hover {
+    border-color: var(--accentHover);
+    background-color: var(--accentHover);
+    color: var(--accentInk);
+  }
+
+  .detail {
+    color: var(--accentInk);
+    opacity: 0.72;
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.detail {
+  color: var(--inkMuted);
+  font-size: var(--extraSmallFontSize);
+  font-family: var(--monoSpaceFontFamily);
+}

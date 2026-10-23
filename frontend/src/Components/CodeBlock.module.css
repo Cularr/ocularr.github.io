@@ -1,0 +1,90 @@
+.block {
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: var(--codeBackgroundColor);
+  color: var(--codeColor);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 0;
+  gap: 8px;
+}
+
+.variants {
+  display: flex;
+  gap: 2px;
+}
+
+.variant {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--codeMuted);
+  font-size: 12px;
+  font-family: var(--monoSpaceFontFamily);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--codeColor);
+  }
+}
+
+.isSelected {
+  background-color: var(--codeRaised);
+  color: var(--codeColor);
+}
+
+.copy {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--codeMuted);
+  font-size: 12px;
+  cursor: pointer;
+  gap: 6px;
+
+  &:hover {
+    background-color: var(--codeRaised);
+    color: var(--codeColor);
+  }
+}
+
+.code {
+  overflow-x: auto;
+  margin: 0;
+  padding: 10px 16px 14px;
+  font-size: 13px;
+  font-family: var(--monoSpaceFontFamily);
+  line-height: 1.7;
+}
+
+.line {
+  display: block;
+  white-space: pre;
+}
+
+.prompt {
+  margin-right: 10px;
+  color: var(--codePromptColor);
+  user-select: none;
+}
+
+.status {
+  position: absolute;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  width: 1px;
+  height: 1px;
+  border: 0;
+  clip-path: inset(50%);
+
+  white-space: nowrap;
+}

@@ -1,0 +1,37 @@
+.tree {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  max-width: 100%;
+  width: fit-content;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background-color: var(--paperSunken);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: var(--monoSpaceFontFamily);
+  line-height: 1.6;
+}
+
+.images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.image {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  font-size: 14px;
+  gap: 6px;
+
+  a {
+    overflow-wrap: anywhere;
+
+    font-weight: 500;
+    font-family: var(--monoSpaceFontFamily);
+  }
+}

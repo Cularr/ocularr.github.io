@@ -1,0 +1,40 @@
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  padding: 14px 14px 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--inkMuted);
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    color var(--transitionSmooth),
+    border-color var(--transitionSmooth);
+  gap: 8px;
+
+  &:hover {
+    color: var(--ink);
+  }
+}
+
+.isSelected {
+  border-bottom: 3px solid var(--accentText);
+  background-color: var(--paperRaised);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (--breakpointSmall) {
+  .tab {
+    flex-direction: column;
+    padding: 12px 12px 10px;
+    min-width: 76px;
+    font-size: 13px;
+    gap: 4px;
+  }
+}

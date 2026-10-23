@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sonarr</title>
+    <script>
+      (function () {
+        var path = window.location.pathname;
+        var target = '/';
+
+        if (path.indexOf('/demo/') === 0 && path.length > 6) {
+          target =
+            '/demo/?route=' +
+            encodeURIComponent(
+              path.slice(5) + window.location.search + window.location.hash
+            );
+        }
+
+        window.location.replace(target);
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="/">Go to sonarr.tv</a>
+  </body>
+</html>

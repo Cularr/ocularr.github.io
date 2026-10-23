@@ -1,0 +1,50 @@
+.step {
+  position: relative;
+  display: flex;
+  padding-bottom: 32px;
+  gap: 18px;
+
+  &:not(:last-child)::before {
+    position: absolute;
+    top: 34px;
+    bottom: 6px;
+    left: 13px;
+    width: 1px;
+    background-color: var(--hairline);
+    content: "";
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 27px;
+  height: 27px;
+  border-radius: 999px;
+  background-color: var(--ink);
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding-top: 2px;
+  min-width: 0;
+  gap: 12px;
+}
+
+.title {
+  font-size: var(--defaultFontSize);
+  line-height: 1.5;
+}

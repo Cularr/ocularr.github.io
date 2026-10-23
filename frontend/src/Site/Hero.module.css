@@ -1,0 +1,156 @@
+.hero {
+  --stageDepth: 330px;
+
+  background-color: var(--paper);
+  background-image: linear-gradient(to bottom, var(--stage) calc(100% - var(--stageDepth)), transparent calc(100% - var(--stageDepth)));
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  padding: 72px var(--gutter) 0;
+  max-width: var(--contentWidth);
+  gap: 56px;
+}
+
+.intro {
+  display: grid;
+  align-items: end;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 32px 64px;
+}
+
+.title {
+  color: var(--stageInk);
+  text-wrap: balance;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  font-size: 58px;
+  line-height: 1.02;
+}
+
+.side {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lede {
+  color: var(--stageInkSoft);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background-color: var(--accent);
+  color: var(--accentInk);
+  font-weight: 600;
+  font-size: 15px;
+  transition:
+    background-color var(--transitionSmooth),
+    border-color var(--transitionSmooth);
+  gap: 10px;
+
+  &:hover {
+    border-color: var(--accentHover);
+    background-color: var(--accentHover);
+    color: var(--accentInk);
+    text-decoration: none;
+  }
+}
+
+.secondary {
+  composes: primary;
+
+  border-color: var(--stageLine);
+  background-color: var(--stageRaised);
+  color: var(--stageInk);
+
+  &:hover {
+    border-color: var(--stageInkMuted);
+    background-color: var(--stageRaised);
+    color: var(--stageInk);
+  }
+}
+
+.facts {
+  color: var(--stageInkMuted);
+  font-size: 13px;
+}
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.caption {
+  max-width: 72ch;
+  color: var(--inkMuted);
+  font-size: 14px;
+
+  strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+}
+
+@media (--breakpointMedium) {
+  .intro {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .title {
+    max-width: 16ch;
+    font-size: 48px;
+  }
+
+  .side {
+    max-width: 60ch;
+  }
+}
+
+@media (--breakpointSmall) {
+  .hero {
+    --stageDepth: 300px;
+  }
+
+  .inner {
+    padding: 40px var(--gutterSmallScreen) 0;
+    gap: 36px;
+  }
+
+  .title {
+    font-size: 36px;
+    line-height: 1.08;
+  }
+
+  .lede {
+    font-size: 16px;
+  }
+}
+
+@media (--breakpointExtraSmall) {
+  .actions {
+    width: 100%;
+  }
+
+  .primary {
+    justify-content: center;
+    width: 100%;
+  }
+}

@@ -1,0 +1,152 @@
+.skipLink {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 60;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  background-color: var(--accent);
+  color: var(--accentInk);
+  font-weight: 600;
+  transform: translateY(-200%);
+
+  &:focus {
+    transform: none;
+  }
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--stageLine);
+  background-color: var(--stageHeader);
+  color: var(--stageInkSoft);
+  backdrop-filter: blur(12px);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  max-width: var(--contentWidth);
+  height: var(--headerHeight);
+  gap: 24px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--stageInk);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: 19px;
+  gap: 10px;
+
+  &:hover {
+    color: var(--stageInk);
+    text-decoration: none;
+  }
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  gap: 2px;
+}
+
+.navOpen {
+  composes: nav;
+}
+
+.link {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  color: var(--stageInkSoft);
+  font-weight: 500;
+  font-size: 14px;
+  transition:
+    background-color var(--transitionSmooth),
+    color var(--transitionSmooth);
+
+  &:hover {
+    background-color: var(--stageRaised);
+    color: var(--stageInk);
+    text-decoration: none;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  border-left: 1px solid var(--stageLine);
+  gap: 4px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--stageInkSoft);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--stageRaised);
+    color: var(--stageInk);
+  }
+}
+
+.menuButton {
+  composes: iconButton;
+
+  display: none;
+}
+
+@media (--breakpointSmall) {
+  .inner {
+    justify-content: space-between;
+    padding: 0 var(--gutterSmallScreen);
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .navOpen {
+    position: absolute;
+    top: var(--headerHeight);
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    padding: 8px var(--gutterSmallScreen) 16px;
+    border-bottom: 1px solid var(--stageLine);
+    background-color: var(--stage);
+    box-shadow: var(--shadowDropdown);
+  }
+
+  .link {
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+
+  .actions {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .menuButton {
+    display: inline-flex;
+  }
+}

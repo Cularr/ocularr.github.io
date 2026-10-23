@@ -1,0 +1,15 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  padding: 88px var(--gutter) 112px;
+  max-width: var(--contentWidth);
+  gap: 96px;
+}
+
+@media (--breakpointSmall) {
+  .content {
+    padding: 56px var(--gutterSmallScreen) 72px;
+    gap: 64px;
+  }
+}

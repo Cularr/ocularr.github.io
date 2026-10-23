@@ -29,3 +29,13 @@ _ReSharper*/
 
 node_modules/*
 .idea/workspace.xml
+
+*.css.d.ts
+.cache/
+.demo-build/
+/.vs
+
+/index.html
+/assets/
+/demo/
+/_site/

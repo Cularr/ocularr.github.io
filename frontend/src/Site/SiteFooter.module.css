@@ -1,0 +1,56 @@
+.footer {
+  background-color: var(--stage);
+  color: var(--stageInkMuted);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin: 0 auto;
+  padding: 40px var(--gutter);
+  max-width: var(--contentWidth);
+  font-size: 14px;
+  gap: 24px 40px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.4;
+}
+
+.name {
+  color: var(--stageInk);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+
+  a {
+    color: var(--stageInkSoft);
+
+    &:hover {
+      color: var(--stageInk);
+    }
+  }
+}
+
+@media (--breakpointSmall) {
+  .inner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 32px var(--gutterSmallScreen);
+  }
+}

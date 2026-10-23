@@ -1,0 +1,15 @@
+:root {
+  --headerHeight: 60px;
+  --contentWidth: 1180px;
+  --gutter: 24px;
+  --gutterSmallScreen: 16px;
+  --defaultFontFamily: "Inter", ui-sans-serif, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --monoSpaceFontFamily: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Courier New", monospace;
+  --extraSmallFontSize: 12px;
+  --smallFontSize: 14px;
+  --defaultFontSize: 16px;
+  --largeFontSize: 18px;
+  --lineHeight: 1.6;
+  --radius: 6px;
+  --radiusLarge: 10px;
+}

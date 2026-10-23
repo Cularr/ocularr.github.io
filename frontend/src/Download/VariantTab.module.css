@@ -1,0 +1,25 @@
+.tab {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--inkMuted);
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background-color var(--transitionSmooth),
+    color var(--transitionSmooth);
+
+  &:hover {
+    color: var(--ink);
+  }
+}
+
+.isSelected {
+  background-color: var(--paperRaised);
+  box-shadow: 0 1px 2px oklch(0% 0 0 / 0.12), 0 0 0 1px var(--hairline);
+  color: var(--ink);
+}
