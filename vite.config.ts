@@ -26,9 +26,7 @@ const contentTypes: Record<string, string> = {
   '.txt': 'text/plain',
 };
 
-const staticFolders = ['css', 'docs', 'img', 'logo'];
-
-const staticFiles = ['/donate.html', '/privacy.html'];
+const staticFolders = ['docs', 'img', 'logo'];
 
 function serveDemo(): Plugin {
   return {
@@ -73,10 +71,7 @@ function serveStatic(): Plugin {
         const url = new URL(req.url ?? '/', 'http://localhost');
         const [, folder] = url.pathname.split('/');
 
-        if (
-          !staticFolders.includes(folder) &&
-          !staticFiles.includes(url.pathname)
-        ) {
+        if (!staticFolders.includes(folder)) {
           next();
 
           return;

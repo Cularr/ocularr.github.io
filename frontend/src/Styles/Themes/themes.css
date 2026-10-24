@@ -8,13 +8,13 @@
   --inkSoft: oklch(34% 0.014 260);
   --inkMuted: oklch(47% 0.014 260);
   --inkFaint: oklch(52% 0.012 260);
-  --accent: oklch(78% 0.13 215);
-  --accentHover: oklch(85% 0.105 215);
-  --accentInk: oklch(19% 0.03 245);
-  --accentText: oklch(52% 0.12 215);
-  --accentTint: oklch(78% 0.13 215 / 0.12);
-  --linkColor: oklch(49% 0.12 235);
-  --linkHoverColor: oklch(38% 0.12 235);
+  --accent: oklch(78% 0.13 285);
+  --accentHover: oklch(85% 0.105 285);
+  --accentInk: oklch(19% 0.03 285);
+  --accentText: oklch(52% 0.12 285);
+  --accentTint: oklch(78% 0.13 285 / 0.12);
+  --linkColor: oklch(49% 0.12 285);
+  --linkHoverColor: oklch(38% 0.12 285);
   --warningColor: oklch(66% 0.14 65);
   --warningTint: oklch(76% 0.13 70 / 0.16);
   --stage: oklch(21% 0.018 262);
@@ -28,7 +28,7 @@
   --codeRaised: oklch(29% 0.02 262);
   --codeColor: oklch(92% 0.006 260);
   --codeMuted: oklch(70% 0.012 260);
-  --codePromptColor: oklch(80% 0.12 215);
+  --codePromptColor: oklch(80% 0.12 285);
   --shadowWindow:
     0 48px 96px -40px oklch(15% 0.03 262 / 0.55),
     0 12px 32px -12px oklch(15% 0.03 262 / 0.3);
@@ -50,10 +50,10 @@
   --inkSoft: oklch(85% 0.008 260);
   --inkMuted: oklch(71% 0.011 260);
   --inkFaint: oklch(64% 0.012 260);
-  --accentText: oklch(82% 0.11 215);
-  --accentTint: oklch(78% 0.13 215 / 0.1);
-  --linkColor: oklch(80% 0.11 225);
-  --linkHoverColor: oklch(89% 0.08 225);
+  --accentText: oklch(82% 0.11 285);
+  --accentTint: oklch(78% 0.13 285 / 0.1);
+  --linkColor: oklch(80% 0.11 285);
+  --linkHoverColor: oklch(89% 0.08 285);
   --warningColor: oklch(78% 0.13 70);
   --warningTint: oklch(76% 0.13 70 / 0.1);
   --stage: oklch(15.5% 0.014 262);

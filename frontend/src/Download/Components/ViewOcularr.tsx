@@ -1,17 +1,17 @@
 import React from 'react';
 import Step from './Step';
 
-interface ViewSonarrProps {
+interface ViewOcularrProps {
   number: number;
   isRemote?: boolean;
 }
 
-function ViewSonarr({ number, isRemote = true }: ViewSonarrProps) {
+function ViewOcularr({ number, isRemote = true }: ViewOcularrProps) {
   return (
-    <Step number={number} title="Open Sonarr">
+    <Step number={number} title="Open Ocularr">
       <p>
-        Browse to <a href="http://localhost:8989">http://localhost:8989</a> to
-        start using Sonarr.
+        Browse to <a href="http://localhost:8383">http://localhost:8383</a> to
+        start using Ocularr.
         {isRemote
           ? ' Replace localhost with the server address if you are connecting from another machine.'
           : null}
@@ -20,4 +20,4 @@ function ViewSonarr({ number, isRemote = true }: ViewSonarrProps) {
   );
 }
 
-export default ViewSonarr;
+export default ViewOcularr;

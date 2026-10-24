@@ -188,7 +188,7 @@ function DemoFrame({ request }: DemoFrameProps) {
   return (
     <div className={styles.window}>
       <div className={styles.addressBar}>
-        <span className={styles.address}>sonarr.local{path}</span>
+        <span className={styles.address}>ocularr.local{path}</span>
         <span className={styles.sample}>sample data</span>
         <a
           className={styles.open}
@@ -245,7 +245,7 @@ function DemoFrame({ request }: DemoFrameProps) {
                   isLoaded && styles.isVisible
                 )}
                 src={frameSrc}
-                title="Sonarr demo"
+                title="Ocularr demo"
                 onLoad={handleFrameLoad}
               />
             ) : null}

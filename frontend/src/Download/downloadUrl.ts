@@ -1,13 +1,13 @@
-const BASE_URL = 'https://services.sonarr.tv/v1/download/main/latest';
+const BASE_URL = 'https://system.ocularr.ink/v1/update/master/updatefile';
 
 interface DownloadUrlOptions {
-  os: 'windows' | 'linux' | 'macos';
+  os: 'windows' | 'linux' | 'osx';
   arch?: 'x64' | 'x86' | 'arm' | 'arm64';
   installer?: boolean;
 }
 
 function downloadUrl({ os, arch, installer = false }: DownloadUrlOptions) {
-  const params = new URLSearchParams({ version: '4', os });
+  const params = new URLSearchParams({ os });
 
   if (arch) {
     params.set('arch', arch);

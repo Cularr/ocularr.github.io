@@ -29,13 +29,14 @@ function Hero({ selection, demoRequest }: HeroProps) {
       <div className={styles.inner}>
         <div className={styles.intro}>
           <h1 className={styles.title}>
-            Sonarr is a PVR for Usenet and BitTorrent users.
+            Ocularr is an automatic pull list for manga and comics.
           </h1>
           <div className={styles.side}>
             <p className={styles.lede}>
-              It watches RSS feeds for new episodes of your shows, grabs them,
-              sorts them and renames them. When a better release comes along, it
-              upgrades the file you already have.
+              It watches Usenet and BitTorrent RSS feeds for new chapters and
+              issues of the series you follow, grabs them, sorts them and
+              renames them. When a better release comes along, it upgrades the
+              file you already have. Bring your own reader.
             </p>
             <div className={styles.actions}>
               <a
@@ -50,15 +51,16 @@ function Hero({ selection, demoRequest }: HeroProps) {
               </a>
               <a
                 className={styles.secondary}
-                href="https://github.com/Sonarr/Sonarr"
+                href="https://github.com/cularr/ocularr"
               >
                 <Github size={18} />
                 Source on GitHub
               </a>
             </div>
             <p className={styles.facts}>
-              Free and open source under GPL-3.0. Runs on Windows, macOS, Linux,
-              Docker and most NAS devices.
+              Free and open source under GPL-3.0. A fork of Sonarr for manga and
+              comics. Runs on Windows, macOS, Linux, Docker and most NAS
+              devices.
             </p>
           </div>
         </div>
@@ -66,9 +68,9 @@ function Hero({ selection, demoRequest }: HeroProps) {
         <div id="demo" className={styles.demo}>
           <DemoFrame request={demoRequest} />
           <p className={styles.caption}>
-            <strong>Try it here.</strong> This is the Sonarr interface, running
-            in your browser with a sample library. Open a series, search for an
-            episode, grab a release and watch it download and import.
+            <strong>Try it here.</strong> This is the Ocularr interface, running
+            in your browser with a sample library. Open a series, search for a
+            chapter, grab a release and watch it download and import.
           </p>
         </div>
       </div>

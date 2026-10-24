@@ -1,9 +1,9 @@
 {
-  "name": "sonarr.tv",
+  "name": "ocularr.ink",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Sonarr's Website",
+  "description": "Ocularr's Website",
   "scripts": {
     "prestart": "node --experimental-strip-types scripts/ensureDemo.mts",
     "start": "vite",
@@ -19,8 +19,8 @@
     "build:demo-api": "vite build --config vite.demo.config.ts && node --experimental-strip-types scripts/finalizeDemo.mts",
     "build:shows": "node --experimental-strip-types scripts/buildShows.mts && node --experimental-strip-types scripts/finalizeDemo.mts"
   },
-  "repository": "https://github.com/Sonarr/sonarr.github.io",
-  "author": "Team Sonarr",
+  "repository": "https://github.com/cularr/ocularr.github.io",
+  "author": "Ocularr",
   "license": "BSD",
   "engines": {
     "node": ">=22.6.0"

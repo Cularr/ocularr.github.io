@@ -26,42 +26,42 @@ const FEATURES: Feature[] = [
     route: '/calendar',
     icon: CalendarDays,
     title: 'Calendar',
-    text: 'Every upcoming episode in one place, colored by whether it is on disk, downloading or missing.',
+    text: 'Announced volume releases in one place, colored by whether they are on disk, downloading or missing.',
   },
   {
     id: 'search',
     route: '/series/slow-horses',
     icon: UserSearch,
     title: 'Manual search',
-    text: 'See every release for an episode, compare quality, size and peers, and send the one you want to your download client.',
+    text: 'See every release for a chapter or volume, compare quality, size and peers, and send the one you want to your download client.',
   },
   {
     id: 'failed',
     route: '/activity/queue',
     icon: RotateCcw,
     title: 'Failed download handling',
-    text: 'When a download is password protected, missing repair blocks or broken in some other way, Sonarr blocklists the release and tries another one.',
+    text: 'When a download is password protected, missing repair blocks or broken in some other way, Ocularr blocklists the release and tries another one.',
   },
   {
     id: 'profiles',
     route: '/settings/profiles',
     icon: SlidersHorizontal,
     title: 'Quality profiles',
-    text: 'Choose exactly which qualities you want, in which order, and when Sonarr should stop upgrading.',
+    text: 'Rank scans, web rips, digital and retail releases by quality, and decide when Ocularr should stop upgrading.',
   },
   {
     id: 'series',
     route: '/',
     icon: LayoutGrid,
     title: 'Series views',
-    text: 'Posters, overview or table. Every series and season shows how many episodes you have.',
+    text: 'Covers, overview or table. Every series and volume shows how many chapters you have.',
   },
   {
     id: 'updates',
     route: '/system/updates',
     icon: CircleArrowUp,
     title: 'Built-in updater',
-    text: 'Read what changed and update from inside Sonarr, without reinstalling.',
+    text: 'Read what changed and update from inside Ocularr, without reinstalling.',
   },
 ];
 
@@ -69,21 +69,21 @@ const INTEGRATIONS = [
   {
     title: 'Download clients',
     items:
-      'SABnzbd, NZBGet, qBittorrent, Transmission, Deluge, rTorrent and more',
+      'SABnzbd, NZBGet, qBittorrent, Transmission, Deluge, rTorrent, plugins and more',
   },
   {
     title: 'Media servers and notifications',
     items:
-      'Plex, Kodi, Emby, Jellyfin, Discord, Telegram, Pushover, email and more',
+      'Komga, Kavita, Emby, Jellyfin, Discord, Telegram, Pushover, ntfy, Apprise, email and more',
   },
   {
     title: 'Import lists',
-    items: 'Trakt, Plex Watchlist, IMDb lists, AniList, MyAnimeList and more',
+    items: 'MangaBaka, AniList, MyAnimeList, custom lists and RSS',
   },
   {
     title: 'Everything else',
     items:
-      'Custom formats, renaming, specials, multi-episode releases and a full REST API',
+      'Custom formats, renaming, multi-chapter and volume releases, Mylar-compatible metadata and a full REST API',
   },
 ];
 
@@ -96,7 +96,7 @@ function Features({ onShowFeature }: FeaturesProps) {
     <Section
       id="features"
       title="Features"
-      lede="Add your shows once. Sonarr keeps checking for new episodes and better releases, and handles the rest."
+      lede="Add your manga and comics once. Ocularr keeps checking for new chapters, issues and better releases, and handles the rest."
     >
       <ul className={styles.list}>
         {FEATURES.map((feature) => (

@@ -26,9 +26,10 @@ export const platforms: Platform[] = [
     variants: [
       { id: 'debian', name: 'Debian' },
       { id: 'ubuntu', name: 'Ubuntu' },
-      { id: 'archlinux', name: 'Arch Linux' },
-      { id: 'gentoo', name: 'Gentoo' },
-      { id: 'freebsd', name: 'FreeBSD' },
+      // Disabled until packages exist, guides are kept in Download/Guides
+      // { id: 'archlinux', name: 'Arch Linux' },
+      // { id: 'gentoo', name: 'Gentoo' },
+      // { id: 'freebsd', name: 'FreeBSD' },
       { id: 'other', name: 'Other' },
     ],
   },
@@ -38,7 +39,8 @@ export const platforms: Platform[] = [
     name: 'NAS',
     variants: [
       { id: 'synology', name: 'Synology' },
-      { id: 'qnap', name: 'QNAP' },
+      // Disabled until a package exists, guide is kept in NasGuide
+      // { id: 'qnap', name: 'QNAP' },
       { id: 'other', name: 'Other' },
     ],
   },

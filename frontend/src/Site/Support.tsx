@@ -2,15 +2,14 @@ import {
   ArrowUpRight,
   BookOpen,
   Bug,
-  Hash,
   Heart,
   LucideIcon,
   MessageCircle,
-  MessagesSquare,
   Users,
 } from 'lucide-react';
 import React from 'react';
 import Section from 'Components/Section';
+import Note from 'Download/Components/Note';
 import styles from './Support.module.css';
 
 interface SupportLink {
@@ -25,44 +24,30 @@ const LINKS: SupportLink[] = [
   {
     icon: BookOpen,
     title: 'Wiki',
-    text: 'FAQ, setup guides and troubleshooting.',
-    href: 'https://wiki.servarr.com/sonarr',
-    address: 'wiki.servarr.com/sonarr',
-  },
-  {
-    icon: MessageCircle,
-    title: 'Discord',
-    text: 'Chat with other users and the developers.',
-    href: 'https://discord.sonarr.tv',
-    address: 'discord.sonarr.tv',
-  },
-  {
-    icon: MessagesSquare,
-    title: 'Forums',
-    text: 'Ask questions and search older answers.',
-    href: 'https://forums.sonarr.tv',
-    address: 'forums.sonarr.tv',
-  },
-  {
-    icon: Users,
-    title: 'Reddit',
-    text: 'Share setups and talk about Sonarr.',
-    href: 'https://www.reddit.com/r/sonarr',
-    address: 'r/sonarr',
-  },
-  {
-    icon: Hash,
-    title: 'IRC',
-    text: 'The #sonarr channel on Libera.Chat.',
-    href: 'https://web.libera.chat/?channels=#sonarr',
-    address: 'irc.libera.chat #sonarr',
+    text: 'The Servarr wiki. Ocularr works like Sonarr, so most guides apply.',
+    href: 'https://wiki.servarr.com/',
+    address: 'wiki.servarr.com',
   },
   {
     icon: Bug,
     title: 'GitHub Issues',
-    text: 'Bug reports and feature requests only.',
-    href: 'https://github.com/Sonarr/Sonarr/issues',
-    address: 'github.com/Sonarr/Sonarr',
+    text: 'Bug reports and feature requests for Ocularr.',
+    href: 'https://github.com/cularr/ocularr/issues',
+    address: 'github.com/cularr/ocularr',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Discord',
+    text: 'Ocularr has no Discord of its own. General questions about the *arr stack can be asked on the Servarr Discord.',
+    href: 'https://radarr.video/discord',
+    address: 'Servarr Discord',
+  },
+  {
+    icon: Users,
+    title: 'Reddit',
+    text: 'Talk about the *arr stack with other users.',
+    href: 'https://www.reddit.com/r/servarr',
+    address: 'r/servarr',
   },
 ];
 
@@ -72,7 +57,7 @@ function Support() {
       <Section
         id="support"
         title="Support"
-        lede="Most questions are answered in the wiki. For anything else, Discord and the forums are the quickest way to reach other users and the team."
+        lede="Bugs and feature requests go to GitHub Issues. For general questions about the *arr stack, the Servarr wiki and community are the place to look."
       >
         <ul className={styles.links}>
           {LINKS.map(({ icon: Icon, title, text, href, address }) => (
@@ -89,17 +74,25 @@ function Support() {
             </li>
           ))}
         </ul>
+        <div className={styles.notice}>
+          <Note kind="warning" title="Not supported by the Servarr team">
+            Ocularr is an independent fork. The Servarr team does not support it
+            and only answers general questions about the *arr stack. Please do
+            not ask them about Ocularr-specific problems.
+          </Note>
+        </div>
       </Section>
 
       <Section
         title="Donate"
-        lede="Sonarr is built by volunteers in their spare time."
+        lede="Ocularr does not accept donations at the moment."
       >
         <div className={styles.donate}>
           <p className={styles.donateText}>
-            Donations pay for the servers Sonarr relies on for metadata and
-            updates, and support development. Every expense on Open Collective
-            is public.
+            Ocularr is built on Sonarr. If you want to give something back,
+            consider donating to Sonarr instead. Donations pay for the servers
+            Sonarr relies on and support its development. Every expense on Open
+            Collective is public.
           </p>
           <div className={styles.donateActions}>
             <a
@@ -107,10 +100,7 @@ function Support() {
               href="https://opencollective.com/sonarr"
             >
               <Heart size={16} />
-              Donate on Open Collective
-            </a>
-            <a className={styles.donateLink} href="/donate.html">
-              Other ways to donate
+              Donate to Sonarr on Open Collective
             </a>
           </div>
         </div>

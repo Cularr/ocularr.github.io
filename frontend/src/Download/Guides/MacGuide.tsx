@@ -6,24 +6,18 @@ import Guide from 'Download/Components/Guide';
 import Note from 'Download/Components/Note';
 import Step from 'Download/Components/Step';
 import Steps from 'Download/Components/Steps';
-import ViewSonarr from 'Download/Components/ViewSonarr';
+import ViewOcularr from 'Download/Components/ViewOcularr';
 import downloadUrl from 'Download/downloadUrl';
 
 function MacGuide() {
   return (
     <Guide
-      maintainers={[{ name: 'Team Sonarr' }]}
-      intro={<p>The easiest way to run Sonarr on macOS is the app archive.</p>}
-      upgrade={
-        <Note title="Upgrading from v3">
-          Sonarr converts an existing v3 database on startup. Back it up first.
-        </Note>
-      }
+      intro={<p>The easiest way to run Ocularr on macOS is the app archive.</p>}
       alternatives={
         <>
           <h5>Manual install</h5>
           <p>
-            You can install Sonarr from a .tar.gz archive, but then you handle
+            You can install Ocularr from a .tar.gz archive, but then you handle
             dependencies, installation and permissions yourself.
           </p>
           <DownloadLinks
@@ -31,12 +25,12 @@ function MacGuide() {
               {
                 label: 'macOS Apple silicon',
                 detail: 'arm64 .tar.gz',
-                href: downloadUrl({ os: 'macos', arch: 'arm64' }),
+                href: downloadUrl({ os: 'osx', arch: 'arm64' }),
               },
               {
                 label: 'macOS Intel',
                 detail: 'x64 .tar.gz',
-                href: downloadUrl({ os: 'macos', arch: 'x64' }),
+                href: downloadUrl({ os: 'osx', arch: 'x64' }),
               },
             ]}
           />
@@ -49,19 +43,19 @@ function MacGuide() {
           <DownloadLinks
             links={[
               {
-                label: 'Sonarr for Apple silicon',
+                label: 'Ocularr for Apple silicon',
                 detail: 'M1 and newer',
                 href: downloadUrl({
-                  os: 'macos',
+                  os: 'osx',
                   arch: 'arm64',
                   installer: true,
                 }),
               },
               {
-                label: 'Sonarr for Intel',
+                label: 'Ocularr for Intel',
                 detail: 'x64',
                 href: downloadUrl({
-                  os: 'macos',
+                  os: 'osx',
                   arch: 'x64',
                   installer: true,
                 }),
@@ -70,28 +64,30 @@ function MacGuide() {
           />
         </Step>
         <Step number={2} title="Move it to Applications">
-          <p>Open the archive and drag Sonarr into your Applications folder.</p>
+          <p>
+            Open the archive and drag Ocularr into your Applications folder.
+          </p>
           <Note kind="warning">
-            On macOS 10.12 and later, Gatekeeper App Translocation stops Sonarr
+            On macOS 10.12 and later, Gatekeeper App Translocation stops Ocularr
             from updating itself if it runs from the download location. It must
             live in Applications.
           </Note>
         </Step>
-        <Step number={3} title="Self-sign Sonarr">
+        <Step number={3} title="Self-sign Ocularr">
           <p>Open Terminal and run:</p>
           <CodeBlock
             variants={[
               {
                 label: 'zsh',
-                code: 'codesign --force --deep -s - /Applications/Sonarr.app && xattr -rd com.apple.quarantine /Applications/Sonarr.app',
+                code: 'codesign --force --deep -s - /Applications/Ocularr.app && xattr -rd com.apple.quarantine /Applications/Ocularr.app',
               },
             ]}
           />
         </Step>
-        <Step number={4} title="Start Sonarr">
-          <p>Open Sonarr from your Applications folder.</p>
+        <Step number={4} title="Start Ocularr">
+          <p>Open Ocularr from your Applications folder.</p>
         </Step>
-        <ViewSonarr number={5} isRemote={false} />
+        <ViewOcularr number={5} isRemote={false} />
       </Steps>
     </Guide>
   );

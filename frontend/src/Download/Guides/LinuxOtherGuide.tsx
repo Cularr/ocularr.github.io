@@ -13,8 +13,9 @@ function LinuxOtherGuide() {
             dependencies, installation and permissions yourself.
           </p>
           <p>
-            If you want to package Sonarr v4 for another distribution,{' '}
-            <a href="#support">get in touch</a>.
+            If you want to package Ocularr for another distribution,{' '}
+            <a href="https://github.com/cularr/ocularr/issues">open an issue</a>
+            .
           </p>
         </>
       }

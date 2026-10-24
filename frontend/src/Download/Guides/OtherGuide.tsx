@@ -8,12 +8,13 @@ function OtherGuide() {
       intro={
         <>
           <p>
-            Sonarr runs on .NET, so it works on most platforms that .NET
-            supports, including a Raspberry Pi with the Linux ARM build.
+            Ocularr runs on .NET, so it works on most platforms that .NET
+            supports, including a Raspberry Pi.
           </p>
           <p>
-            Want to port Sonarr to a platform not listed here?{' '}
-            <a href="#support">Get in touch</a>.
+            Want to run Ocularr on a platform not listed here?{' '}
+            <a href="https://github.com/cularr/ocularr/issues">Open an issue</a>
+            .
           </p>
         </>
       }

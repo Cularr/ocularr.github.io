@@ -3,10 +3,9 @@ import CodeBlock from 'Components/CodeBlock';
 import DockerAlternative from 'Download/Components/DockerAlternative';
 import Guide from 'Download/Components/Guide';
 import LinuxManualDownloads from 'Download/Components/LinuxManualDownloads';
-import Note from 'Download/Components/Note';
 import Step from 'Download/Components/Step';
 import Steps from 'Download/Components/Steps';
-import ViewSonarr from 'Download/Components/ViewSonarr';
+import ViewOcularr from 'Download/Components/ViewOcularr';
 
 function ArchLinuxGuide() {
   return (
@@ -15,8 +14,8 @@ function ArchLinuxGuide() {
       intro={
         <p>
           The Arch User Repository has a{' '}
-          <a href="https://aur.archlinux.org/packages/sonarr-bin/">
-            sonarr-bin
+          <a href="https://aur.archlinux.org/packages/ocularr-bin/">
+            ocularr-bin
           </a>{' '}
           package you can build by hand or with your favorite{' '}
           <a href="https://wiki.archlinux.org/index.php/AUR_helpers">
@@ -25,16 +24,11 @@ function ArchLinuxGuide() {
           .
         </p>
       }
-      upgrade={
-        <Note title="Upgrading from v3">
-          Sonarr converts an existing v3 database on startup. Back it up first.
-        </Note>
-      }
       alternatives={
         <>
           <h5>Manual install</h5>
           <p>
-            You can install Sonarr from the upstream .tar.gz archive, but then
+            You can install Ocularr from the upstream .tar.gz archive, but then
             you handle dependencies, installation and permissions yourself.
           </p>
           <LinuxManualDownloads />
@@ -45,7 +39,7 @@ function ArchLinuxGuide() {
       <Steps>
         <Step number={1} title="Install the package">
           <p>
-            An AUR helper installs Sonarr and its dependencies in one go. For
+            An AUR helper installs Ocularr and its dependencies in one go. For
             example with{' '}
             <a href="https://aur.archlinux.org/packages/paru">paru</a>, or
             follow the{' '}
@@ -55,20 +49,20 @@ function ArchLinuxGuide() {
             .
           </p>
           <CodeBlock
-            variants={[{ label: 'paru', code: 'paru -S sonarr-bin' }]}
+            variants={[{ label: 'paru', code: 'paru -S ocularr-bin' }]}
           />
         </Step>
-        <Step number={2} title="Start Sonarr">
+        <Step number={2} title="Start Ocularr">
           <CodeBlock
             variants={[
               {
                 label: 'systemd',
-                code: 'sudo systemctl daemon-reload\nsudo systemctl enable --now sonarr',
+                code: 'sudo systemctl daemon-reload\nsudo systemctl enable --now ocularr',
               },
             ]}
           />
         </Step>
-        <ViewSonarr number={3} />
+        <ViewOcularr number={3} />
       </Steps>
     </Guide>
   );

@@ -9,7 +9,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   margin: 0 auto;
-  padding: 40px var(--gutter);
+  padding: 40px var(--gutter) 12px;
   max-width: var(--contentWidth);
   font-size: 14px;
   gap: 24px 40px;
@@ -17,13 +17,18 @@
 
 .brand {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
+
+  svg {
+    flex: 0 0 auto;
+  }
 }
 
 .brandText {
   display: flex;
   flex-direction: column;
+  max-width: 52ch;
   line-height: 1.4;
 }
 
@@ -47,10 +52,26 @@
   }
 }
 
+.copyright {
+  margin-top: -14px;
+  padding-top: 8px;
+  width: 100%;
+  border-top: 1px solid var(--stageLine);
+  font-size: 13px;
+
+  a {
+    color: var(--stageInkSoft);
+
+    &:hover {
+      color: var(--stageInk);
+    }
+  }
+}
+
 @media (--breakpointSmall) {
   .inner {
     align-items: flex-start;
     flex-direction: column;
-    padding: 32px var(--gutterSmallScreen);
+    padding: 32px var(--gutterSmallScreen) 10px;
   }
 }

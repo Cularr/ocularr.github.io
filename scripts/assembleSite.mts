@@ -8,14 +8,11 @@ const ENTRIES = [
   '404.html',
   'CNAME',
   'assets',
-  'css',
   'demo',
   'docs',
-  'donate.html',
   'img',
   'index.html',
   'logo',
-  'privacy.html',
 ];
 
 rmSync(outDir, { recursive: true, force: true });

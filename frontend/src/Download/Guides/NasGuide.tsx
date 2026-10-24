@@ -14,13 +14,13 @@ function NasGuide({ nas }: NasGuideProps) {
         intro={
           <>
             <p>
-              A Sonarr package for Synology is maintained by{' '}
-              <a href="https://synocommunity.com/">SynoCommunity</a>. Add their
-              package source in Package Center to install it.
+              There is no Ocularr package for Synology yet. If you would like
+              one, please contact{' '}
+              <a href="https://synocommunity.com/">SynoCommunity</a>.
             </p>
             <p>
-              Maintain that package? <a href="#support">Get in touch</a> and we
-              will add full install steps here.
+              Maintain an Ocularr package? <a href="#support">Get in touch</a>{' '}
+              and we will add full install steps here.
             </p>
           </>
         }
@@ -34,7 +34,8 @@ function NasGuide({ nas }: NasGuideProps) {
         intro={
           <>
             <p>
-              The Sonarr QNAP package is maintained by the QNAP forum community.
+              The Ocularr QNAP package is maintained by the QNAP forum
+              community.
             </p>
             <p>
               Maintain that package? <a href="#support">Get in touch</a> and we
@@ -51,14 +52,12 @@ function NasGuide({ nas }: NasGuideProps) {
       intro={
         <>
           <p>
-            Most NAS systems can run Sonarr in{' '}
-            <a href="#downloads-docker">Docker</a>. A generic Linux build is
-            also available, but you will need to handle dependencies,
-            installation and permissions yourself.
+            Please <a href="#support">contact us</a> if you wish to port Ocularr
+            to any other NAS than the ones already listed.
           </p>
           <p>
-            Want to port Sonarr to another NAS?{' '}
-            <a href="#support">Get in touch</a>.
+            A generic download is available for Linux, but dependencies,
+            installation and permissions will need to be done manually.
           </p>
         </>
       }

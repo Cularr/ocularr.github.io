@@ -6,7 +6,7 @@ function DockerAlternative() {
       <h5>Docker container</h5>
       <p>
         You can follow the <a href="#downloads-docker">Docker guide</a> to
-        install Sonarr as a Docker container instead.
+        install Ocularr as a Docker container instead.
       </p>
     </>
   );

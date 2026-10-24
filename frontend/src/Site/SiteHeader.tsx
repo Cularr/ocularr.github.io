@@ -9,8 +9,8 @@ const LINKS = [
   { href: '#features', label: 'Features' },
   { href: '#download', label: 'Download' },
   { href: '#support', label: 'Support' },
-  { href: '/donate.html', label: 'Donate' },
-  { href: 'https://github.com/Sonarr/Sonarr', label: 'GitHub' },
+  { href: 'https://opencollective.com/sonarr', label: 'Donate' },
+  { href: 'https://github.com/cularr/ocularr', label: 'GitHub' },
 ];
 
 function getTheme(): Theme {
@@ -88,7 +88,7 @@ function SiteHeader() {
       <div className={styles.inner}>
         <a className={styles.brand} href="#home">
           <Logo size={28} />
-          <span>Sonarr</span>
+          <span>Ocularr</span>
         </a>
 
         <nav

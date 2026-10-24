@@ -5,7 +5,7 @@ import Guide from 'Download/Components/Guide';
 import LinuxManualDownloads from 'Download/Components/LinuxManualDownloads';
 import Step from 'Download/Components/Step';
 import Steps from 'Download/Components/Steps';
-import ViewSonarr from 'Download/Components/ViewSonarr';
+import ViewOcularr from 'Download/Components/ViewOcularr';
 
 function GentooGuide() {
   return (
@@ -17,8 +17,8 @@ function GentooGuide() {
       intro={
         <p>
           Gentoo ships{' '}
-          <a href="https://packages.gentoo.org/packages/www-apps/sonarr-bin">
-            www-apps/sonarr-bin
+          <a href="https://packages.gentoo.org/packages/www-apps/ocularr-bin">
+            www-apps/ocularr-bin
           </a>{' '}
           in Portage.
         </p>
@@ -27,7 +27,7 @@ function GentooGuide() {
         <>
           <h5>Manual install</h5>
           <p>
-            You can install Sonarr from the upstream .tar.gz archive, but then
+            You can install Ocularr from the upstream .tar.gz archive, but then
             you handle dependencies, installation and permissions yourself.
           </p>
           <LinuxManualDownloads />
@@ -39,25 +39,27 @@ function GentooGuide() {
         <Step number={1} title="Install the package">
           <CodeBlock
             prompt="#"
-            variants={[{ label: 'emerge', code: 'emerge www-apps/sonarr-bin' }]}
+            variants={[
+              { label: 'emerge', code: 'emerge www-apps/ocularr-bin' },
+            ]}
           />
         </Step>
-        <Step number={2} title="Start Sonarr">
+        <Step number={2} title="Start Ocularr">
           <CodeBlock
             prompt="#"
             variants={[
               {
                 label: 'systemd',
-                code: 'systemctl daemon-reload\nsystemctl enable --now sonarr',
+                code: 'systemctl daemon-reload\nsystemctl enable --now ocularr',
               },
               {
                 label: 'OpenRC',
-                code: 'rc-update add sonarr default\nrc-service sonarr start',
+                code: 'rc-update add ocularr default\nrc-service ocularr start',
               },
             ]}
           />
         </Step>
-        <ViewSonarr number={3} />
+        <ViewOcularr number={3} />
       </Steps>
     </Guide>
   );
