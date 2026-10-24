@@ -91,6 +91,47 @@
   font-size: 13px;
 }
 
+.notice {
+  display: flex;
+  align-self: stretch;
+  padding: 14px 18px;
+  border: 1px solid oklch(80% 0.14 75 / 0.6);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  background-color: oklch(78% 0.13 70 / 0.2);
+  color: var(--stageInkSoft);
+  font-size: 15px;
+  line-height: 1.5;
+  gap: 14px;
+
+  a {
+    color: oklch(85% 0.12 80);
+    text-decoration: underline;
+  }
+
+  a:hover {
+    color: oklch(92% 0.08 85);
+  }
+}
+
+.noticeIcon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: oklch(82% 0.15 75);
+}
+
+.noticeBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.noticeTitle {
+  color: var(--stageInk);
+  font-weight: 600;
+  font-size: 16px;
+}
+
 .demo {
   display: flex;
   flex-direction: column;

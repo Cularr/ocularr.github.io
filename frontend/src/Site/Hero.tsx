@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Github } from 'lucide-react';
+import { ArrowDownToLine, Github, TriangleAlert } from 'lucide-react';
 import React, { useCallback } from 'react';
 import {
   isMobileDevice,
@@ -62,6 +62,25 @@ function Hero({ selection, demoRequest }: HeroProps) {
               comics. Runs on Windows, macOS, Linux, Docker and most NAS
               devices.
             </p>
+            <div className={styles.notice}>
+              <TriangleAlert
+                className={styles.noticeIcon}
+                size={22}
+                strokeWidth={2}
+              />
+              <div className={styles.noticeBody}>
+                <strong className={styles.noticeTitle}>
+                  Manga is in beta, comics are not fully supported yet
+                </strong>
+                <span>
+                  Expect rough edges. Please{' '}
+                  <a href="https://github.com/cularr/ocularr/issues">
+                    report manga issues on GitHub
+                  </a>
+                  .
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
