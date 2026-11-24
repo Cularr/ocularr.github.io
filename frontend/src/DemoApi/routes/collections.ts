@@ -139,8 +139,8 @@ function handleBulkPut({ items, body, render }: CollectionContext) {
 
         if (Array.isArray(tags)) {
           item.tags = applyTags(
-            (item.tags ?? []) as number[],
-            (tags as number[]).map(Number),
+            idsFrom(item, 'tags'),
+            idsFrom({ tags }, 'tags'),
             mode
           );
         }

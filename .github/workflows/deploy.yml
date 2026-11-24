@@ -25,15 +25,18 @@ jobs:
           node-version: 22
           cache: yarn
 
-      - name: Cache Sonarr source
-        uses: actions/cache@v4
+      - uses: actions/checkout@v4
         with:
-          path: .cache/sonarr
-          key: sonarr-${{ hashFiles('scripts/buildDemo.mts') }}
+          repository: Cularr/Ocularr
+          ref: develop
+          path: .cache/ocularr-source
+          token: ${{ secrets.OCULARR_SOURCE_TOKEN || github.token }}
 
       - run: yarn install --frozen-lockfile
 
       - run: yarn build
+        env:
+          OCULARR_SOURCE: ${{ github.workspace }}/.cache/ocularr-source
 
       - id: site
         if: github.event_name != 'pull_request' && vars.DEPLOY_TARGET == 'cloudflare'

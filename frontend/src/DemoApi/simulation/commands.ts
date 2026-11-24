@@ -1,68 +1,119 @@
 import { DemoCommand, JsonObject } from '../DemoTypes';
+import { applyFileChanges } from '../operations/filePreviews';
 import { commandResource } from '../resources/system';
-import { cutoffUnmetEpisodes, missingEpisodes } from '../state/queries';
+import { idsFrom } from '../routes/request';
+import { wantedWorks } from '../routes/search';
+import { cutoffUnmetWorks, missingWorks } from '../state/queries';
 import { DemoDb, nextId } from '../state/store';
 import { currentVersion } from '../state/version';
 import { broadcast, broadcastVersion } from '../transport/signalR';
-import { searchEpisodes } from './queue';
+import { searchWorks } from './queue';
+import { volumeWorks } from './releases';
 
 const SEARCH_COMMANDS = [
-  'EpisodeSearch',
-  'SeasonSearch',
+  'ChapterSearch',
+  'VolumeSearch',
   'SeriesSearch',
-  'MissingEpisodeSearch',
-  'CutoffUnmetEpisodeSearch',
+  'MissingChapterSearch',
+  'CutoffUnmetChapterSearch',
 ];
 
+const WANTED_FILTERS = [
+  'seriesIds',
+  'qualityProfileIds',
+  'seriesType',
+  'ordering',
+  'kind',
+  'seriesTags',
+  'quality',
+];
+
+function wantedQuery(body: JsonObject) {
+  const query = new URLSearchParams();
+
+  if (typeof body.monitored === 'boolean') {
+    query.set('monitored', String(body.monitored));
+  }
+
+  WANTED_FILTERS.forEach((key) => {
+    const value = body[key];
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => query.append(key, String(item)));
+    }
+  });
+
+  return query;
+}
+
 function runCommandEffects(db: DemoDb, name: string, body: JsonObject) {
-  const episodeIds = (body.episodeIds ?? []) as number[];
+  const workIds = idsFrom(body, 'workIds');
   const seriesId = body.seriesId as number | undefined;
-  const seasonNumber = body.seasonNumber as number | undefined;
+  const volumeNumber = body.volumeNumber as number | undefined;
 
   switch (name) {
-    case 'EpisodeSearch':
-      searchEpisodes(
+    case 'ChapterSearch':
+      searchWorks(
         db,
-        db.episodes.filter((e) => episodeIds.includes(e.id))
+        db.works.filter((e) => workIds.includes(e.id))
       );
       break;
-    case 'SeasonSearch':
-      searchEpisodes(
+
+    case 'VolumeSearch': {
+      const members = new Set(
+        volumeWorks(
+          db,
+          Number(seriesId),
+          volumeNumber,
+          body.volumeWorkId as number | undefined
+        )
+      );
+      searchWorks(
         db,
-        missingEpisodes(db, {
-          filter: (e) =>
-            e.seriesId === seriesId && e.seasonNumber === seasonNumber,
+        missingWorks(db, {
+          filter: (e) => members.has(e),
         })
       );
       break;
+    }
+
     case 'SeriesSearch':
-      searchEpisodes(
+      searchWorks(
         db,
-        missingEpisodes(db, { filter: (e) => e.seriesId === seriesId })
+        missingWorks(db, { filter: (e) => e.seriesId === seriesId })
       );
       break;
-    case 'CutoffUnmetEpisodeSearch':
-      searchEpisodes(
+    case 'CutoffUnmetChapterSearch':
+      searchWorks(
         db,
-        cutoffUnmetEpisodes(db, {
-          filter: (e) => !episodeIds.length || episodeIds.includes(e.id),
-        })
+        workIds.length
+          ? cutoffUnmetWorks(db, { filter: (e) => workIds.includes(e.id) })
+          : wantedWorks(db, 'cutoff', wantedQuery(body), {
+              includeQueued: false,
+            })
       );
       break;
-    case 'MissingEpisodeSearch':
-      searchEpisodes(
+    case 'MissingChapterSearch':
+      searchWorks(
         db,
-        missingEpisodes(db, {
-          filter: (e) => !episodeIds.length || episodeIds.includes(e.id),
-        })
+        workIds.length
+          ? missingWorks(db, { filter: (e) => workIds.includes(e.id) })
+          : wantedWorks(db, 'missing', wantedQuery(body), {
+              includeQueued: false,
+            })
       );
+      break;
+    case 'RenameFiles':
+    case 'RenameSeries':
+    case 'RetagWorkFiles':
+    case 'RetagSeries':
+      applyFileChanges(db, name, body);
       break;
     case 'ClearBlocklist':
       db.blocklist = [];
       break;
     case 'ApplicationUpdate':
-    case 'ApplicationUpdateCheck':
-      if (!db.updateInstalled && name === 'ApplicationUpdate') {
+      if (!db.updateInstalled) {
         db.updateInstalled = true;
         broadcastVersion(currentVersion(db));
       }

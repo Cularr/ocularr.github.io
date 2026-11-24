@@ -2,7 +2,7 @@ import { DAY, INSTALLED_VERSION, LATEST_VERSION } from '../constants';
 import { DemoCommand, JsonObject } from '../DemoTypes';
 import { qualityModel } from '../qualities/model';
 import { DemoDb } from '../state/store';
-import { seriesResource } from './series';
+import { seriesStatistics } from './series';
 
 export function commandResource(command: DemoCommand): JsonObject {
   return {
@@ -47,7 +47,7 @@ export function updateResources(installedLatest: boolean): JsonObject[] {
       version: LATEST_VERSION,
       branch: 'main',
       releaseDate: new Date(today - 2 * DAY).toISOString(),
-      fileName: `Sonarr.main.${LATEST_VERSION}.linux-x64.tar.gz`,
+      fileName: `Ocularr.main.${LATEST_VERSION}.linux-x64.tar.gz`,
       url: '',
       installed: installedLatest,
       installedOn: installedLatest ? new Date(today).toISOString() : '',
@@ -56,11 +56,11 @@ export function updateResources(installedLatest: boolean): JsonObject[] {
       changes: {
         new: [
           'Show custom format score in the queue',
-          'Option to import episodes with a lower score',
+          'Option to import chapters with a lower score',
         ],
         fixed: [
           'Calendar not respecting the first day of week',
-          'Season pack imports skipping specials',
+          'Volume pack imports skipping specials',
         ],
       },
       hash: 'demo3120',
@@ -70,7 +70,7 @@ export function updateResources(installedLatest: boolean): JsonObject[] {
       version: INSTALLED_VERSION,
       branch: 'main',
       releaseDate: new Date(today - 19 * DAY).toISOString(),
-      fileName: `Sonarr.main.${INSTALLED_VERSION}.linux-x64.tar.gz`,
+      fileName: `Ocularr.main.${INSTALLED_VERSION}.linux-x64.tar.gz`,
       url: '',
       installed: !installedLatest,
       installedOn: new Date(today - 18 * DAY).toISOString(),
@@ -90,43 +90,69 @@ export function updateResources(installedLatest: boolean): JsonObject[] {
 
 export function statisticsResource(db: DemoDb): JsonObject {
   const now = Date.now();
-  const seriesResources = db.series.map((s) => seriesResource(db, s));
-  const files = db.episodeFiles;
+  const files = db.workFiles;
   const sizeOnDisk = files.reduce((total, f) => total + f.size, 0);
-  const aired = db.episodes.filter((e) => Date.parse(e.airDateUtc) < now);
-  const seasons = seriesResources.flatMap(
-    (s) => (s.seasons ?? []) as { statistics: { percentOfEpisodes: number } }[]
-  );
+  const workCounts: Record<string, number> = {};
+
+  for (const kind of ['volume', 'chapter', 'magazine']) {
+    const works = db.works.filter((e) => e.kind === kind && e.inEdition);
+    const fileIds = new Set(works.map((e) => e.workFileId).filter(Boolean));
+    const downloaded = works.filter((e) => e.workFileId).length;
+    const unreleased = works.filter(
+      (e) => Date.parse(e.releaseDateUtc) > now
+    ).length;
+    workCounts[`${kind}TotalCount`] = works.length;
+    workCounts[`${kind}MonitoredCount`] = works.filter(
+      (e) => e.monitored
+    ).length;
+    workCounts[`${kind}DownloadedCount`] = downloaded;
+    workCounts[`${kind}MissingCount`] = works.length - downloaded - unreleased;
+    workCounts[`${kind}UnreleasedCount`] = unreleased;
+    workCounts[`${kind}FileCount`] = fileIds.size;
+    workCounts[`${kind}SizeOnDisk`] = files
+      .filter((f) => fileIds.has(f.id))
+      .reduce((sum, f) => sum + f.size, 0);
+    workCounts[`${kind}sWithFilesCount`] = downloaded;
+  }
+
   const qualityNames = Array.from(new Set(files.map((f) => f.quality)));
 
   return {
     id: 0,
     seriesCount: db.series.length,
     monitoredSeriesCount: db.series.filter((s) => s.monitored).length,
-    completedSeriesCount: seriesResources.filter(
-      (s) =>
-        (s.statistics as { percentOfEpisodes: number }).percentOfEpisodes ===
-        100
-    ).length,
-    continuingSeriesCount: db.series.filter((s) => s.status === 'continuing')
+    completedSeriesCount: db.series.filter((series) => {
+      const { chapterCount, workFileCount } = seriesStatistics(db, series);
+      return chapterCount > 0 && chapterCount === workFileCount;
+    }).length,
+    ...workCounts,
+    ongoingSeriesCount: db.series.filter((s) => s.status === 'continuing')
       .length,
-    endedSeriesCount: db.series.filter((s) => s.status === 'ended').length,
+    completedPublicationSeriesCount: db.series.filter(
+      (s) => s.status === 'ended'
+    ).length,
     upcomingSeriesCount: db.series.filter((s) => s.status === 'upcoming')
       .length,
+    ...Object.fromEntries(
+      [
+        'manga',
+        'manhwa',
+        'manhua',
+        'comic',
+        'doujinshi',
+        'oneShot',
+        'magazine',
+        'unknown',
+      ].map((type) => [
+        `${type}SeriesCount`,
+        db.series.filter((s) => s.seriesType === type).length,
+      ])
+    ),
+    unknownStatusSeriesCount: 0,
+    cancelledSeriesCount: 0,
+    hiatusSeriesCount: 0,
     deletedSeriesCount: 0,
-    standardSeriesCount: db.series.length,
-    dailySeriesCount: 0,
-    animeSeriesCount: 0,
-    seasonCount: seasons.length,
-    completedSeasonCount: seasons.filter(
-      (s) => s.statistics.percentOfEpisodes === 100
-    ).length,
-    totalEpisodeCount: db.episodes.length,
-    monitoredEpisodeCount: db.episodes.filter((e) => e.monitored).length,
-    downloadedEpisodeCount: files.length,
-    missingEpisodeCount: aired.filter((e) => !e.episodeFileId).length,
-    unairedEpisodeCount: db.episodes.length - aired.length,
-    episodeFileCount: files.length,
+    workFileCount: files.length,
     sizeOnDisk,
     qualityProfileStatistics: db.collections.qualityprofile.map((profile) => {
       const series = db.series.filter((s) => s.qualityProfileId === profile.id);
@@ -138,7 +164,7 @@ export function statisticsResource(db: DemoDb): JsonObject {
         qualityProfileId: profile.id,
         name: profile.name,
         seriesCount: series.length,
-        episodeFileCount: profileFiles.length,
+        workFileCount: profileFiles.length,
         sizeOnDisk: profileFiles.reduce((total, f) => total + f.size, 0),
       };
     }),
@@ -147,7 +173,7 @@ export function statisticsResource(db: DemoDb): JsonObject {
 
       return {
         quality: qualityModel(name).quality,
-        episodeFileCount: qualityFiles.length,
+        workFileCount: qualityFiles.length,
         sizeOnDisk: qualityFiles.reduce((total, f) => total + f.size, 0),
       };
     }),

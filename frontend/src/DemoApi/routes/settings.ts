@@ -46,19 +46,24 @@ function saveSettings(db: DemoDb, name: string, body: JsonObject) {
 export const settingsRoutes: Route[] = [
   {
     method: 'GET',
+    pattern: /^\/sourcecredit$/,
+    handler: (db) => db.collections.sourcecredit,
+  },
+  {
+    method: 'GET',
     pattern: /^\/settings\/naming\/examples$/,
     handler: (db, request) => namingExamples(db.settings.naming, request.query),
   },
   {
     method: 'GET',
     pattern: /^\/settings\/([a-z]+)(?:\/\d+)?$/,
-    handler: (db, _request, [name]) => settingsResource(db, name),
+    handler: (db, _request, [name = '']) => settingsResource(db, name),
   },
   {
     method: 'PUT',
     pattern: /^\/settings\/([a-z]+)(?:\/\d+)?$/,
     status: 202,
-    handler: (db, request, [name]) =>
+    handler: (db, request, [name = '']) =>
       saveSettings(db, name, objectBody(request)),
   },
   {
@@ -92,7 +97,7 @@ export const settingsRoutes: Route[] = [
   {
     method: 'GET',
     pattern: /^\/(customformat|autotagging)\/schema$/,
-    handler: (_db, _request, [name]) => specificationSchema(name),
+    handler: (_db, _request, [name = '']) => specificationSchema(name),
   },
   {
     method: 'PUT',
@@ -139,6 +144,16 @@ export const settingsRoutes: Route[] = [
     method: 'GET',
     pattern: /^\/importlistexclusion(?:\/paged)?$/,
     handler: (db, request) =>
-      paged(request, db.collections.importlistexclusion, (item) => item),
+      paged(
+        request,
+        db.collections.importlistexclusion,
+        (item) => item,
+        {
+          id: (item) => Number(item.id),
+          title: (item) => String(item.title ?? ''),
+          foreignSeriesId: (item) => String(item.foreignSeriesId ?? ''),
+        },
+        'id'
+      ),
   },
 ];

@@ -1,26 +1,25 @@
 import { seedCollections } from '../collections/seed';
-import { ShowsFile } from '../DemoTypes';
-import { getQuality } from '../qualities/model';
+import { SeriesFile } from '../DemoTypes';
 import { PROFILE_IDS } from '../qualities/profiles';
 import { defaultSettings } from '../settings';
 import { setCatalog, toDemoSeries } from './catalog';
 import { seedBlocklist, seedHistory, seedQueue } from './seedActivity';
-import { seedShowEpisodes } from './seedEpisodes';
+import { seedSeriesWorks } from './seedWorks';
 import { DemoDb } from './store';
 
 const FIRST_ID = 1000;
 
-export function restoreDb(file: ShowsFile, saved: DemoDb) {
-  setCatalog(file.shows);
+export function restoreDb(file: SeriesFile, saved: DemoDb) {
+  setCatalog(file.series);
 
   return saved;
 }
 
-export function createDb(file: ShowsFile): DemoDb {
+export function createDb(file: SeriesFile): DemoDb {
   const db: DemoDb = {
     series: [],
-    episodes: [],
-    episodeFiles: [],
+    works: [],
+    workFiles: [],
     queue: [],
     history: [],
     blocklist: [],
@@ -31,18 +30,20 @@ export function createDb(file: ShowsFile): DemoDb {
     nextId: FIRST_ID,
   };
 
-  const library = file.shows.filter((show) => show.library);
+  const library = file.series.filter((entry) => entry.library);
 
-  setCatalog(file.shows);
-  db.series = library.map((show, index) => toDemoSeries(show, index + 1));
+  setCatalog(file.series);
+  library.forEach((entry, index) => {
+    const series = toDemoSeries(entry, index + 1);
 
-  library.forEach((show, index) => seedShowEpisodes(db, show, index + 1, true));
+    db.series.push(series);
+    seedSeriesWorks(db, entry, series, true);
+  });
   db.collections.qualityprofile = db.collections.qualityprofile.map((profile) =>
-    profile.id === PROFILE_IDS.hd1080p
+    profile.id === PROFILE_IDS.medium
       ? {
           ...profile,
           upgradeAllowed: true,
-          cutoff: getQuality('Bluray-1080p').id,
         }
       : profile
   );

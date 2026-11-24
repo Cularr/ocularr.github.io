@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>Metron logo</title>
+  <g fill="none" stroke="#4258ff" stroke-width="15">
+    <ellipse cx="128" cy="128" rx="55.5" ry="120.5"/>
+    <ellipse cx="128" cy="128" rx="55.5" ry="120.5" transform="rotate(63 128 128)"/>
+    <ellipse cx="128" cy="128" rx="55.5" ry="120.5" transform="rotate(-63 128 128)"/>
+    <circle cx="128" cy="128" r="16.75"/>
+  </g>
+</svg>

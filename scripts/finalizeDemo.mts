@@ -84,14 +84,14 @@ export default function finalizeDemo(demoDir: string) {
   }
 
   const apiPath = hashed('demo-api', '.js');
-  const showsPath = hashed('shows', '.json');
+  const seriesPath = hashed('series', '.json');
   const providersPath = hashed('providers', '.json');
   const localizationPath = hashedDirectory('localization');
 
   const indexPath = path.join(demoDir, 'index.html');
   const index = readFileSync(indexPath, 'utf8').replace(
     /<script src="\/demo\/demo-api[^"]*"[^>]*><\/script>/,
-    `<script src="${apiPath}" data-shows="${showsPath}" data-providers="${providersPath}" data-localization="${localizationPath}"></script>`
+    `<script src="${apiPath}" data-series="${seriesPath}" data-providers="${providersPath}" data-localization="${localizationPath}"></script>`
   );
 
   writeFileSync(indexPath, index);
@@ -100,9 +100,7 @@ export default function finalizeDemo(demoDir: string) {
     'add/new',
     'add/import',
     'calendar',
-    'seasonpass',
     'series',
-    'serieseditor',
     'statistics',
     'activity/queue',
     'activity/history',
@@ -118,6 +116,7 @@ export default function finalizeDemo(demoDir: string) {
     'settings/downloadclients',
     'settings/importlists',
     'settings/connect',
+    'settings/plugins',
     'settings/metadata',
     'settings/metadatasource',
     'settings/tags',
@@ -125,7 +124,7 @@ export default function finalizeDemo(demoDir: string) {
     'settings/ui',
     'system/status',
     'system/tasks',
-    'system/backup',
+    'system/backups',
     'system/updates',
     'system/events',
     'system/logs/files',
@@ -135,9 +134,7 @@ export default function finalizeDemo(demoDir: string) {
   const ROUTE_ROOTS = [
     'add',
     'calendar',
-    'seasonpass',
     'series',
-    'serieseditor',
     'statistics',
     'activity',
     'wanted',
@@ -149,16 +146,16 @@ export default function finalizeDemo(demoDir: string) {
     rmSync(path.join(demoDir, root), { recursive: true, force: true })
   );
 
-  const shows = JSON.parse(
+  const seriesFile = JSON.parse(
     readFileSync(
-      path.join(demoDir, showsPath.replace(`${URL_BASE}/`, '')),
+      path.join(demoDir, seriesPath.replace(`${URL_BASE}/`, '')),
       'utf8'
     )
-  ) as { shows: { title: string }[] };
+  ) as { series: { title: string }[] };
 
   [
     ...APP_ROUTES,
-    ...shows.shows.map((show) => `series/${slug(show.title)}`),
+    ...seriesFile.series.map((entry) => `series/${slug(entry.title)}`),
   ].forEach((route) => {
     const directory = path.join(demoDir, route);
 

@@ -2,7 +2,7 @@ import { GLOBAL_DELAY_PROFILE_ORDER, ROOT_FOLDER } from '../constants';
 import { JsonObject, JsonValue, Protocol } from '../DemoTypes';
 import { seedProvider } from '../providers/providers';
 import { qualityDefinitions } from '../qualities/model';
-import { defaultQualityProfiles } from '../qualities/profiles';
+import { defaultQualityProfiles, PROFILE_IDS } from '../qualities/profiles';
 import { Collections } from './items';
 
 export const INDEXERS: {
@@ -117,7 +117,7 @@ export function seedCollections(): Collections {
         'Plex Watchlist',
         {
           rootFolderPath: ROOT_FOLDER,
-          qualityProfileId: 4,
+          qualityProfileId: PROFILE_IDS.medium,
         },
         { accessToken: 'demo' }
       ),
@@ -149,14 +149,16 @@ export function seedCollections(): Collections {
           onUpgrade: true,
           onRename: true,
           onSeriesDelete: true,
-          onEpisodeFileDelete: true,
-          onEpisodeFileDeleteForUpgrade: true,
+          onWorkFileDelete: true,
+          onWorkFileDeleteForUpgrade: true,
         },
         { host: 'plex', authToken: 'demo' }
       ),
     ]),
+    pluginsource: [],
     metadata: compact(
       [
+        ['ComicTagsMetadata', 'Comic Tags'],
         ['XbmcMetadata', 'Kodi (XBMC) / Emby'],
         ['RoksboxMetadata', 'Roksbox'],
         ['WdtvMetadata', 'WDTV'],
@@ -175,16 +177,16 @@ export function seedCollections(): Collections {
     customformat: [
       {
         id: 1,
-        name: 'x265 (HD)',
+        name: 'Digital release',
         includeCustomFormatWhenRenaming: false,
         specifications: [
           seedSpecification(
-            'x265',
+            'Digital',
             'ReleaseTitleSpecification',
-            '[xh][ ._-]?265|\\bHEVC(\\b|\\d)',
+            '\\bdigital\\b',
             { required: true }
           ),
-          seedSpecification('Not 2160p', 'ResolutionSpecification', 2160, {
+          seedSpecification('Exclude ELQ', 'ResolutionSpecification', 1, {
             negate: true,
             required: true,
           }),
@@ -206,11 +208,10 @@ export function seedCollections(): Collections {
     delayprofile: [
       {
         id: 1,
-        enableUsenet: true,
-        enableTorrent: true,
-        preferredProtocol: 'usenet',
-        usenetDelay: 0,
-        torrentDelay: 0,
+        items: [
+          { protocol: 'usenet', name: 'Usenet', allowed: true, delay: 0 },
+          { protocol: 'torrent', name: 'Torrent', allowed: true, delay: 0 },
+        ],
         bypassIfHighestQuality: true,
         bypassIfAboveCustomFormatScore: false,
         minimumCustomFormatScore: 0,
@@ -225,9 +226,9 @@ export function seedCollections(): Collections {
         enabled: true,
         required: [],
         ignored: ['HC', 'hardsub'],
-        airDateRestriction: false,
-        airDateGracePeriod: 0,
-        allowSeasonPackWithoutAllEpisodesAired: false,
+        releaseDateRestriction: false,
+        releaseDateGracePeriod: 0,
+        allowVolumePackWithoutAllChaptersReleased: false,
         indexerIds: [],
         tags: [],
         excludedTags: [],
@@ -252,8 +253,16 @@ export function seedCollections(): Collections {
     ],
     customfilter: [],
     importlistexclusion: [
-      { id: 1, tvdbId: 121361, title: 'Game of Thrones' },
-      { id: 2, tvdbId: 305288, title: 'Stranger Things' },
+      {
+        id: 1,
+        foreignSeriesId: '31b9ed1a-d31e-860c-9776-26a12907ce5b',
+        title: 'NARUTO',
+      },
+      {
+        id: 2,
+        foreignSeriesId: '9ec0d686-da98-851a-b69b-eeca7c7ce99c',
+        title: 'ATTACK ON TITAN',
+      },
     ],
     qualityprofile: defaultQualityProfiles(),
     qualitydefinition: qualityDefinitions(),

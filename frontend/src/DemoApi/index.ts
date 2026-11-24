@@ -1,6 +1,6 @@
-import { PROVIDERS_PATH, SHOWS_PATH } from './assetPaths';
+import { PROVIDERS_PATH, SERIES_PATH } from './assetPaths';
 import { URL_BASE } from './constants';
-import { ProvidersFile, ShowsFile } from './DemoTypes';
+import { ProvidersFile, SeriesFile } from './DemoTypes';
 import { browserLanguage } from './languages';
 import { loadSnapshot, saveSnapshot } from './persistence';
 import { setProviders } from './providers/registry';
@@ -12,7 +12,7 @@ import { loadTranslations } from './translations';
 import { createResolver, installFetch, nativeFetch } from './transport/http';
 import { installXhr } from './transport/xhr';
 
-const SNAPSHOT_VERSION = `${SHOWS_PATH}|${PROVIDERS_PATH}|2`;
+const SNAPSHOT_VERSION = `${SERIES_PATH}|${PROVIDERS_PATH}|3`;
 
 function readTheme() {
   try {
@@ -25,7 +25,13 @@ function readTheme() {
 }
 
 function loadJson<T>(path: string) {
-  return nativeFetch(path).then((response) => response.json() as Promise<T>);
+  return nativeFetch(path).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Unable to load ${path} (HTTP ${response.status})`);
+    }
+
+    return response.json() as Promise<T>;
+  });
 }
 
 function restoreRoute() {
@@ -58,19 +64,20 @@ restoreRoute();
 const theme = readTheme();
 
 const dbReady: Promise<DemoDb> = Promise.all([
-  loadJson<ShowsFile>(SHOWS_PATH),
+  loadJson<SeriesFile>(SERIES_PATH),
   loadJson<ProvidersFile>(PROVIDERS_PATH),
 ])
-  .then(([shows, providers]) => {
+  .then(([seriesFile, providers]) => {
     setProviders(providers);
 
     const saved = loadSnapshot(SNAPSHOT_VERSION);
-    const db = saved ? restoreDb(shows, saved) : createDb(shows);
+    const db = saved ? restoreDb(seriesFile, saved) : createDb(seriesFile);
 
     if (!saved) {
       db.settings.ui.uiLanguage = browserLanguage(navigator.languages);
     }
 
+    db.collections.sourcecredit = seriesFile.sourceCredits;
     db.settings.ui = { ...db.settings.ui, theme };
     startSimulation(db);
 
@@ -87,7 +94,6 @@ const dbReady: Promise<DemoDb> = Promise.all([
         save();
       }
     });
-    window.setInterval(save, 15000);
 
     return db;
   });
@@ -98,12 +104,12 @@ const resolve = createResolver(
   dbReady,
   URL_BASE,
   (db) => ({
-    apiRoot: '/api/v5',
+    apiRoot: '/api/v1',
     apiKey: 'demo',
     urlBase: URL_BASE,
     theme,
     version: currentVersion(db),
-    instanceName: String(db.settings.general.instanceName ?? 'Sonarr'),
+    instanceName: String(db.settings.general.instanceName ?? 'Ocularr'),
     isProduction: true,
     release: 'main',
   }),

@@ -1,5 +1,12 @@
 export type Protocol = 'usenet' | 'torrent';
 
+export type ReleaseType =
+  | 'unknown'
+  | 'singleChapter'
+  | 'multiChapter'
+  | 'volumePack'
+  | 'multiVolumePack';
+
 type SeriesStatus = 'continuing' | 'ended' | 'upcoming';
 
 export type JsonValue =
@@ -16,96 +23,86 @@ export interface QualityInfo {
   id: number;
   name: string;
   source: string;
-  resolution: number;
+  tier: string;
 }
 
-interface ShowAiring {
-  anchor: number;
-  dayOffset: number;
-  missing?: number[];
-}
-
-interface ShowEpisode {
-  seasonNumber: number;
-  episodeNumber: number;
+export interface SeriesWork {
+  id: number;
+  kind: 'unknown' | 'chapter' | 'volume' | 'magazine' | 'partialChapter';
+  countType: 'main' | 'extra';
+  number: number;
+  numberLabel?: string;
+  volumeNumber: number | null;
+  absoluteNumber?: number;
   title: string;
-  airDateUtc: string;
+  releaseDateUtc: string;
+  inEdition: boolean;
+  parentWorkIds: number[];
+  pageCount?: number;
+  isbn?: string;
+  overview?: string;
 }
 
-export interface ShowData {
-  tvdbId: number;
+export interface SeriesData {
+  extraMonitoredCollectionId?: string;
+  seriesType: string;
+  foreignSeriesId: string;
+  metadata: JsonObject;
   title: string;
   overview: string;
   year: number;
   status: 'continuing' | 'ended';
-  runtime: number;
-  airTime: string;
-  network: string;
   genres: string[];
-  certification: string;
   rating: number;
-  imdbId: string;
-  tmdbId: number;
-  tvMazeId: number;
   hasPoster: boolean;
   hasFanart: boolean;
   hasBanner: boolean;
   qualityProfileId: number;
   library: boolean;
-  airing: ShowAiring | null;
-  episodes: ShowEpisode[];
+  works: SeriesWork[];
 }
 
-export interface ShowsFile {
-  generated: string;
-  shows: ShowData[];
+export interface SeriesFile {
+  sourceCredits: JsonObject[];
+  series: SeriesData[];
 }
 
 export interface DemoSeries {
   id: number;
-  tvdbId: number;
-  imdbId: string;
-  tmdbId: number;
-  tvMazeId: number;
+  foreignSeriesId: string;
+  metadata: JsonObject;
   hasPoster: boolean;
   hasFanart: boolean;
   hasBanner: boolean;
   title: string;
   year: number;
-  network: string;
   status: SeriesStatus;
-  runtime: number;
-  airTime: string;
   qualityProfileId: number;
   genres: string[];
-  certification: string;
   rating: number;
   overview: string;
   monitored: boolean;
-  seasonMonitored: Record<number, boolean>;
   added: string;
   tags: number[];
   seriesType?: string;
-  seasonFolder?: boolean;
+  volumeFolder?: boolean;
   monitorNewItems?: string;
   path?: string;
 }
 
-export interface DemoEpisode {
-  id: number;
+export interface DemoWork extends SeriesWork {
   seriesId: number;
-  seasonNumber: number;
-  episodeNumber: number;
-  title: string;
-  airDateUtc: string;
   monitored: boolean;
-  episodeFileId: number;
+  workFileId: number;
 }
 
-export interface DemoEpisodeFile {
+export interface DemoWorkFile {
+  releaseType?: ReleaseType;
+  relativePath?: string;
+  comicTags?: Record<string, string>;
   id: number;
   seriesId: number;
-  seasonNumber: number;
+  volumeNumber: number;
   quality: string;
   size: number;
   releaseGroup: string;
@@ -113,9 +110,10 @@ export interface DemoEpisodeFile {
 }
 
 export interface DemoRelease {
+  releaseType?: ReleaseType;
   guid: string;
   seriesId: number;
-  episodeIds: number[];
+  workIds: number[];
   title: string;
   protocol: Protocol;
   indexerId: number;
@@ -128,7 +126,7 @@ export interface DemoRelease {
   customFormatScore: number;
   releaseGroup: string;
   rejections: string[];
-  fullSeason?: boolean;
+  fullVolume?: boolean;
 }
 
 export interface DemoQueueItem {
@@ -145,7 +143,7 @@ export interface DemoQueueItem {
 export interface DemoHistory {
   id: number;
   seriesId: number;
-  episodeId: number;
+  workId: number;
   sourceTitle: string;
   quality: string;
   date: string;
@@ -156,7 +154,7 @@ export interface DemoHistory {
 export interface DemoBlocklist {
   id: number;
   seriesId: number;
-  episodeIds: number[];
+  workIds: number[];
   sourceTitle: string;
   quality: string;
   protocol: Protocol;

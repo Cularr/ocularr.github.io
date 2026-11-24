@@ -1,13 +1,13 @@
-import { DemoEpisode, DemoEpisodeFile } from '../DemoTypes';
-import { qualityWeight } from '../qualities/model';
+import { DemoWork, DemoWorkFile } from '../DemoTypes';
+import { getQuality, qualityWeight } from '../qualities/model';
 import { cutoffWeight } from '../qualities/profiles';
 import { DemoDb } from './store';
 
-export function isQueued(db: DemoDb, episodeId: number) {
-  return db.queue.some((item) => item.release.episodeIds.includes(episodeId));
+export function isQueued(db: DemoDb, workId: number) {
+  return db.queue.some((item) => item.release.workIds.includes(workId));
 }
 
-export function isCutoffUnmet(db: DemoDb, file: DemoEpisodeFile) {
+export function isCutoffUnmet(db: DemoDb, file: DemoWorkFile) {
   const series = db.series.find((s) => s.id === file.seriesId);
   const profile = db.collections.qualityprofile.find(
     (p) => p.id === series?.qualityProfileId
@@ -23,48 +23,110 @@ export function findSeries(db: DemoDb, id: string | number) {
   return db.series.find((s) => s.id === Number(id));
 }
 
-interface EpisodeQuery {
+export function filterValues(query: URLSearchParams, key: string) {
+  return query
+    .getAll(key)
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+export function filterIds(query: URLSearchParams, key: string) {
+  return filterValues(query, key).map(Number);
+}
+
+export function enumFilter(
+  query: URLSearchParams,
+  key: string,
+  names: Record<number, string>
+) {
+  const values = filterValues(query, key).map((value) =>
+    /^\d+$/.test(value) ? names[Number(value)] : value.toLowerCase()
+  );
+
+  return (value: string) =>
+    !values.length || values.includes(value.toLowerCase());
+}
+
+export function matchesSeriesTags(
+  series: ReturnType<typeof findSeries>,
+  tags: number[]
+) {
+  return !tags.length || !!series?.tags.some((tag) => tags.includes(tag));
+}
+
+interface WorkQuery {
   monitored?: boolean;
   includeQueued?: boolean;
-  filter?: (episode: DemoEpisode) => boolean;
+  filter?: (work: DemoWork) => boolean;
 }
 
-function newestFirst(a: DemoEpisode, b: DemoEpisode) {
-  return Date.parse(b.airDateUtc) - Date.parse(a.airDateUtc);
+interface MissingWorkQuery extends WorkQuery {
+  includeSpecials?: boolean;
 }
 
-export function missingEpisodes(
+interface CutoffWorkQuery extends WorkQuery {
+  qualityIds?: number[];
+}
+
+export function isMonitored(db: DemoDb, work: DemoWork) {
+  return (
+    work.monitored && !!db.series.find((s) => s.id === work.seriesId)?.monitored
+  );
+}
+
+function newestFirst(a: DemoWork, b: DemoWork) {
+  return Date.parse(b.releaseDateUtc) - Date.parse(a.releaseDateUtc);
+}
+
+export function missingWorks(
   db: DemoDb,
-  { monitored = true, includeQueued = false, filter }: EpisodeQuery = {}
+  {
+    monitored = true,
+    includeQueued = false,
+    includeSpecials = true,
+    filter,
+  }: MissingWorkQuery = {}
 ) {
   const now = Date.now();
 
-  return db.episodes
+  return db.works
     .filter(
       (e) =>
-        e.monitored === monitored &&
-        !e.episodeFileId &&
-        Date.parse(e.airDateUtc) < now &&
+        isMonitored(db, e) === monitored &&
+        !e.workFileId &&
+        e.inEdition &&
+        e.kind !== 'partialChapter' &&
+        (includeSpecials || e.countType !== 'extra') &&
+        (!e.releaseDateUtc || Date.parse(e.releaseDateUtc) < now) &&
         (includeQueued || !isQueued(db, e.id)) &&
         (!filter || filter(e))
     )
     .sort(newestFirst);
 }
 
-export function cutoffUnmetEpisodes(
+export function cutoffUnmetWorks(
   db: DemoDb,
-  { includeQueued = false, filter }: EpisodeQuery = {}
+  {
+    monitored = true,
+    includeQueued = false,
+    qualityIds = [],
+    filter,
+  }: CutoffWorkQuery = {}
 ) {
-  const files = new Map(db.episodeFiles.map((file) => [file.id, file]));
+  const files = new Map(db.workFiles.map((file) => [file.id, file]));
 
-  return db.episodes
+  return db.works
     .filter((e) => {
-      const file = files.get(e.episodeFileId);
+      const file = files.get(e.workFileId);
 
       return (
         !!file &&
-        e.monitored &&
+        e.inEdition &&
+        isMonitored(db, e) === monitored &&
         isCutoffUnmet(db, file) &&
+        (!qualityIds.length ||
+          qualityIds.includes(getQuality(file.quality).id)) &&
         (includeQueued || !isQueued(db, e.id)) &&
         (!filter || filter(e))
       );

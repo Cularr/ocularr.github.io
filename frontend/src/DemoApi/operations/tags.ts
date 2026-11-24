@@ -1,5 +1,6 @@
 import { JsonObject } from '../DemoTypes';
 import { seriesResource } from '../resources/series';
+import { idsFrom } from '../routes/request';
 import { DemoDb } from '../state/store';
 import { broadcast } from '../transport/signalR';
 
@@ -18,14 +19,13 @@ export function applyTags(current: number[], tags: number[], mode: unknown) {
 export function tagDetails(db: DemoDb, tag: JsonObject) {
   const withTag = (items: JsonObject[], key = 'tags') =>
     items
-      .filter((item) =>
-        ((item[key] ?? []) as number[]).includes(Number(tag.id))
-      )
+      .filter((item) => idsFrom(item, key).includes(Number(tag.id)))
       .map((item) => Number(item.id));
 
   return {
     id: tag.id,
     label: tag.label,
+    rootFolderIds: withTag(db.collections.rootfolder, 'defaultTags'),
     delayProfileIds: withTag(db.collections.delayprofile),
     importListIds: withTag(db.collections.importlist),
     notificationIds: withTag(db.collections.connection),
@@ -53,9 +53,9 @@ export function removeTag(db: DemoDb, id: number) {
 
   Object.values(db.collections).forEach((items) => {
     items.forEach((item) => {
-      ['tags', 'excludedTags'].forEach((key) => {
+      ['tags', 'excludedTags', 'defaultTags'].forEach((key) => {
         if (Array.isArray(item[key])) {
-          item[key] = (item[key] as number[]).filter((tag) => tag !== id);
+          item[key] = idsFrom(item, key).filter((tag) => tag !== id);
         }
       });
     });

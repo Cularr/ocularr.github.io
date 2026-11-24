@@ -90,7 +90,7 @@ export function createResolver(
     if (!apiMatch) {
       return method === 'GET' || method === 'HEAD'
         ? 'passthrough'
-        : json(405, { message: 'Not available in the demo', details: '' });
+        : json(405, { message: 'Not available in the demo', description: '' });
     }
 
     const apiPath = apiMatch[1].replace(/\/$/, '');

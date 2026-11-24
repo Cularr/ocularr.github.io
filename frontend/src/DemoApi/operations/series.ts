@@ -1,39 +1,73 @@
-import { DemoSeries, JsonObject } from '../DemoTypes';
-import { episodeResource } from '../resources/episode';
+import { DemoSeries, DemoWork, JsonObject } from '../DemoTypes';
 import { queueStatus } from '../resources/queue';
 import { seriesResource } from '../resources/series';
+import { workResource } from '../resources/work';
 import { ResponseError } from '../responseError';
-import { searchEpisodes } from '../simulation/queue';
-import { addSeries } from '../state/catalog';
+import { idsFrom } from '../routes/request';
+import { searchWorks } from '../simulation/queue';
+import { addSeries, readMonitorType } from '../state/catalog';
+import {
+  applyLayout,
+  collectionsOf,
+  coveredIds,
+  orderingFor,
+} from '../state/editions';
 import { folderName, seriesPath } from '../state/paths';
-import { findSeries, missingEpisodes } from '../state/queries';
+import { findSeries, missingWorks } from '../state/queries';
 import { DemoDb, nextId } from '../state/store';
 import { broadcast } from '../transport/signalR';
 import { applyTags } from './tags';
 
-export function setSeasonMonitored(
+export function setVolumeMonitored(
   db: DemoDb,
-  series: DemoSeries,
-  seasonNumber: number,
+  works: DemoWork[],
+  workId: unknown,
   monitored: boolean
 ) {
-  const wasMonitored = series.seasonMonitored[seasonNumber] ?? true;
+  const volume = works.find(
+    (work) => work.kind === 'volume' && work.id === workId
+  );
 
-  series.seasonMonitored[seasonNumber] = monitored;
+  if (!volume) {
+    return false;
+  }
 
-  if (wasMonitored !== monitored) {
-    db.episodes
-      .filter(
-        (e) => e.seriesId === series.id && e.seasonNumber === seasonNumber
-      )
-      .forEach((e) => {
-        e.monitored = monitored;
-        broadcast('episode', 'updated', episodeResource(db, e));
-      });
+  const members = coveredIds(works, [volume.id]);
+
+  for (const work of works) {
+    if (members.has(work.id) && work.monitored !== monitored) {
+      work.monitored = monitored;
+      broadcast('work', 'updated', workResource(db, work));
+    }
+  }
+
+  return true;
+}
+
+const ORDERINGS = ['hierarchical', 'sequential', 'chronological'];
+
+function applyOrdering(series: DemoSeries, body: JsonObject) {
+  if (typeof body.ordering === 'string' && ORDERINGS.includes(body.ordering)) {
+    series.metadata.ordering = body.ordering;
   }
 }
 
 export function updateSeries(db: DemoDb, series: DemoSeries, body: JsonObject) {
+  const collection = collectionsOf(series.metadata).find(
+    (c) => c.id === body.selectedCollectionId
+  );
+
+  applyOrdering(series, body);
+
+  if (collection && collection.id !== series.metadata.selectedCollectionId) {
+    series.metadata.selectedCollectionId = collection.id;
+    series.metadata.ordering = orderingFor(collection.kind);
+    applyLayout(
+      series,
+      db.works.filter((e) => e.seriesId === series.id)
+    );
+  }
+
   if (typeof body.monitored === 'boolean') {
     series.monitored = body.monitored;
   }
@@ -46,8 +80,8 @@ export function updateSeries(db: DemoDb, series: DemoSeries, body: JsonObject) {
     series.seriesType = body.seriesType;
   }
 
-  if (typeof body.seasonFolder === 'boolean') {
-    series.seasonFolder = body.seasonFolder;
+  if (typeof body.volumeFolder === 'boolean') {
+    series.volumeFolder = body.volumeFolder;
   }
 
   if (typeof body.monitorNewItems === 'string') {
@@ -65,24 +99,7 @@ export function updateSeries(db: DemoDb, series: DemoSeries, body: JsonObject) {
   }
 
   if (Array.isArray(body.tags)) {
-    series.tags = applyTags(
-      series.tags,
-      (body.tags as number[]).map(Number),
-      body.applyTags
-    );
-  }
-
-  if (Array.isArray(body.seasons)) {
-    (body.seasons as { seasonNumber: number; monitored?: boolean }[]).forEach(
-      (season) => {
-        setSeasonMonitored(
-          db,
-          series,
-          season.seasonNumber,
-          season.monitored ?? true
-        );
-      }
-    );
+    series.tags = applyTags(series.tags, idsFrom(body, 'tags'), body.applyTags);
   }
 
   const resource = seriesResource(db, series);
@@ -98,8 +115,8 @@ export function deleteSeries(
   addExclusion: boolean
 ) {
   db.series = db.series.filter((s) => s.id !== series.id);
-  db.episodes = db.episodes.filter((e) => e.seriesId !== series.id);
-  db.episodeFiles = db.episodeFiles.filter((f) => f.seriesId !== series.id);
+  db.works = db.works.filter((e) => e.seriesId !== series.id);
+  db.workFiles = db.workFiles.filter((f) => f.seriesId !== series.id);
   db.queue = db.queue.filter((item) => item.release.seriesId !== series.id);
   db.history = db.history.filter((h) => h.seriesId !== series.id);
   db.blocklist = db.blocklist.filter((b) => b.seriesId !== series.id);
@@ -107,7 +124,7 @@ export function deleteSeries(
   if (addExclusion) {
     db.collections.importlistexclusion.push({
       id: nextId(db),
-      tvdbId: series.tvdbId,
+      foreignSeriesId: series.foreignSeriesId,
       title: series.title,
     });
   }
@@ -117,21 +134,21 @@ export function deleteSeries(
   broadcast('queue/status', 'updated', queueStatus(db));
 }
 
-export function deleteEpisodeFile(db: DemoDb, id: number) {
-  const file = db.episodeFiles.find((f) => f.id === id);
+export function deleteWorkFile(db: DemoDb, id: number) {
+  const file = db.workFiles.find((f) => f.id === id);
 
   if (!file) {
     return;
   }
 
-  db.episodeFiles = db.episodeFiles.filter((f) => f.id !== id);
-  broadcast('episodefile', 'deleted', { id });
+  db.workFiles = db.workFiles.filter((f) => f.id !== id);
+  broadcast('workfile', 'deleted', { id });
 
-  db.episodes
-    .filter((e) => e.episodeFileId === id)
-    .forEach((episode) => {
-      episode.episodeFileId = 0;
-      broadcast('episode', 'updated', episodeResource(db, episode));
+  db.works
+    .filter((e) => e.workFileId === id)
+    .forEach((work) => {
+      work.workFileId = 0;
+      broadcast('work', 'updated', workResource(db, work));
     });
 
   const series = findSeries(db, file.seriesId);
@@ -145,27 +162,27 @@ const ADD_SEARCH_LIMIT = 6;
 
 export function addSeriesFromBody(db: DemoDb, body: JsonObject) {
   const addOptions = (body.addOptions ?? {}) as JsonObject;
-  const series = addSeries(db, Number(body.tvdbId), {
+  const series = addSeries(db, String(body.foreignSeriesId), {
     qualityProfileId: Number(body.qualityProfileId) || undefined,
     monitored: body.monitored !== false,
-    monitor: String(addOptions.monitor ?? 'all'),
+    monitor: readMonitorType(addOptions.monitor ?? 'all') ?? 'unknown',
     seriesType:
       typeof body.seriesType === 'string' ? body.seriesType : undefined,
-    seasonFolder:
-      typeof body.seasonFolder === 'boolean' ? body.seasonFolder : undefined,
+    volumeFolder:
+      typeof body.volumeFolder === 'boolean' ? body.volumeFolder : undefined,
     monitorNewItems:
       typeof body.monitorNewItems === 'string'
         ? body.monitorNewItems
         : undefined,
     rootFolderPath:
       typeof body.rootFolderPath === 'string' ? body.rootFolderPath : undefined,
-    tags: Array.isArray(body.tags) ? (body.tags as number[]) : [],
+    tags: idsFrom(body, 'tags'),
   });
 
   if (!series) {
     throw new ResponseError(400, [
       {
-        propertyName: 'TvdbId',
+        propertyName: 'ForeignSeriesId',
         errorMessage: 'This series has already been added',
         severity: 'error',
         isWarning: false,
@@ -173,14 +190,16 @@ export function addSeriesFromBody(db: DemoDb, body: JsonObject) {
     ]);
   }
 
+  applyOrdering(series, body);
+
   const resource = seriesResource(db, series);
 
   broadcast('series', 'updated', resource);
 
-  if (addOptions.searchForMissingEpisodes) {
-    searchEpisodes(
+  if (addOptions.searchForMissingChapters) {
+    searchWorks(
       db,
-      missingEpisodes(db, {
+      missingWorks(db, {
         filter: (e) => e.seriesId === series.id,
       }).slice(0, ADD_SEARCH_LIMIT)
     );

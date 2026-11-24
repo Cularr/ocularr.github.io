@@ -7,6 +7,7 @@ export const PROVIDER_KINDS = [
   'importlist',
   'connection',
   'metadata',
+  'pluginsource',
 ];
 
 export let definitions: ProvidersFile = {};
@@ -15,12 +16,8 @@ export function setProviders(file: ProvidersFile) {
   definitions = file;
 }
 
-export function providerKind(kind: string) {
-  return kind === 'notification' ? 'connection' : kind;
-}
-
 export function definitionFor(kind: string, implementation: unknown) {
-  return (definitions[providerKind(kind)] ?? []).find(
+  return (definitions[kind] ?? []).find(
     (definition) => definition.implementation === implementation
   );
 }

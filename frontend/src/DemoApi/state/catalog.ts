@@ -1,121 +1,168 @@
 import { DAY, ROOT_FOLDER } from '../constants';
-import { DemoEpisode, DemoSeries, ShowData } from '../DemoTypes';
+import { DemoSeries, DemoWork, SeriesData } from '../DemoTypes';
+import { coveredIds, defaultEdition } from './editions';
 import { seriesFolder } from './paths';
-import { seedShowEpisodes } from './seedEpisodes';
+import { seedSeriesWorks } from './seedWorks';
 import { DemoDb, nextId } from './store';
 
-export function toDemoSeries(show: ShowData, id: number): DemoSeries {
+export function toDemoSeries(seriesData: SeriesData, id: number): DemoSeries {
   const {
-    episodes: _episodes,
-    airing: _airing,
+    works: _works,
+    extraMonitoredCollectionId: _extraMonitoredCollectionId,
     library: _library,
     ...rest
-  } = show;
+  } = seriesData;
 
   return {
     ...rest,
+    metadata: { ...seriesData.metadata, ...defaultEdition(seriesData) },
     id,
     monitored: true,
-    seasonMonitored: {},
     added: new Date(Date.now() - (400 + id * 20) * DAY).toISOString(),
     tags: [],
   };
 }
 
-let catalog: ShowData[] = [];
+let catalog: SeriesData[] = [];
 
-export function setCatalog(shows: ShowData[]) {
-  catalog = shows;
+export function setCatalog(seriesList: SeriesData[]) {
+  catalog = seriesList;
 }
 
-export function catalogShows() {
+export function catalogSeries() {
   return catalog;
 }
 
-export function applyMonitor(db: DemoDb, series: DemoSeries, monitor: string) {
-  const now = Date.now();
-  const episodes = db.episodes.filter((e) => e.seriesId === series.id);
-  const seasons = Array.from(new Set(episodes.map((e) => e.seasonNumber))).sort(
-    (a, b) => a - b
-  );
-  const firstSeason = seasons[0];
-  const lastSeason = seasons[seasons.length - 1];
-  const latestAiredSeason = Math.max(
-    firstSeason ?? 1,
-    ...episodes
-      .filter((e) => Date.parse(e.airDateUtc) < now)
-      .map((e) => e.seasonNumber)
-  );
-  const recent = now - 90 * DAY;
-  const rules: Record<string, (episode: DemoEpisode) => boolean> = {
-    all: () => true,
-    future: (e) => Date.parse(e.airDateUtc) > now,
-    missing: (e) => !e.episodeFileId || Date.parse(e.airDateUtc) > now,
-    existing: (e) => !!e.episodeFileId,
-    firstSeason: (e) => e.seasonNumber === firstSeason,
-    lastSeason: (e) => e.seasonNumber === lastSeason,
-    latestSeason: (e) => e.seasonNumber === latestAiredSeason,
-    pilot: (e) => e.seasonNumber === firstSeason && e.episodeNumber === 1,
-    recent: (e) => Date.parse(e.airDateUtc) > recent,
-    none: () => false,
-  };
-  const rule = rules[monitor];
+const MONITOR_TYPES = [
+  'unknown',
+  'all',
+  'future',
+  'missing',
+  'existing',
+  'firstVolume',
+  'lastVolume',
+  'latestVolume',
+  'pilot',
+  'recent',
+  'monitorSpecials',
+  'unmonitorSpecials',
+  'none',
+  'skip',
+] as const;
 
-  if (!rule) {
+type MonitorTypes = (typeof MONITOR_TYPES)[number];
+
+export function readMonitorType(value: unknown) {
+  return MONITOR_TYPES.find((monitor) => monitor === value);
+}
+
+export function applyMonitor(
+  db: DemoDb,
+  series: DemoSeries,
+  monitor: MonitorTypes
+) {
+  if (monitor === 'skip' || monitor === 'unknown') {
     return;
   }
 
-  episodes.forEach((episode) => {
-    episode.monitored = rule(episode);
-  });
+  const now = Date.now();
+  const works = db.works.filter((work) => work.seriesId === series.id);
+  const regular = works.filter(
+    (work) => work.inEdition && work.countType !== 'extra'
+  );
+  const volumes = regular
+    .filter((work) => work.kind === 'volume')
+    .sort((a, b) => a.number - b.number);
+  const pilot = regular
+    .filter((work) => work.kind === 'chapter' || work.kind === 'magazine')
+    .sort((a, b) => a.number - b.number)[0];
 
-  seasons.forEach((seasonNumber) => {
-    series.seasonMonitored[seasonNumber] = episodes.some(
-      (e) => e.seasonNumber === seasonNumber && e.monitored
-    );
-  });
+  const within = (root: DemoWork | undefined) => {
+    const covered = coveredIds(works, root ? [root.id] : []);
 
-  series.monitored = monitor !== 'none' || series.monitored;
+    return (work: DemoWork) =>
+      covered.has(work.id) &&
+      (work.id === root?.id || work.countType !== 'extra');
+  };
+
+  const recent = now - 90 * DAY;
+  const rules: Record<
+    Exclude<MonitorTypes, 'skip' | 'unknown'>,
+    (work: DemoWork) => boolean
+  > = {
+    all: () => true,
+    future: (work) =>
+      !work.releaseDateUtc || Date.parse(work.releaseDateUtc) >= now,
+    missing: (work) => !work.workFileId,
+    existing: (work) => !!work.workFileId,
+    firstVolume: within(volumes[0]),
+    lastVolume: within(volumes[volumes.length - 1]),
+    latestVolume: within(volumes[volumes.length - 1]),
+    pilot: within(pilot),
+    recent: (work) =>
+      !work.releaseDateUtc || Date.parse(work.releaseDateUtc) >= recent,
+    monitorSpecials: (work) =>
+      work.monitored || (work.inEdition && work.countType === 'extra'),
+    unmonitorSpecials: (work) =>
+      work.monitored && (!work.inEdition || work.countType !== 'extra'),
+    none: () => false,
+  };
+  const rule = rules[monitor];
+  const appliesToAll =
+    monitor === 'monitorSpecials' ||
+    monitor === 'unmonitorSpecials' ||
+    monitor === 'firstVolume' ||
+    monitor === 'lastVolume' ||
+    monitor === 'latestVolume' ||
+    monitor === 'pilot';
+  const regularIds = new Set(regular.map((work) => work.id));
+
+  works.forEach((work) => {
+    work.monitored = (appliesToAll || regularIds.has(work.id)) && rule(work);
+  });
 }
 
 export function addSeries(
   db: DemoDb,
-  tvdbId: number,
+  foreignSeriesId: string,
   options: {
     qualityProfileId?: number;
     monitored?: boolean;
-    monitor?: string;
+    monitor?: MonitorTypes;
     seriesType?: string;
-    seasonFolder?: boolean;
+    volumeFolder?: boolean;
     monitorNewItems?: string;
     rootFolderPath?: string;
     tags?: number[];
   }
 ) {
-  const show = catalog.find((s) => s.tvdbId === tvdbId);
+  const seriesData = catalog.find((s) => s.foreignSeriesId === foreignSeriesId);
 
-  if (!show || db.series.some((s) => s.tvdbId === tvdbId)) {
+  if (
+    !seriesData ||
+    db.series.some((s) => s.foreignSeriesId === foreignSeriesId)
+  ) {
     return null;
   }
 
   const id = nextId(db);
   const series: DemoSeries = {
-    ...toDemoSeries(show, id),
+    ...toDemoSeries(seriesData, id),
     added: new Date().toISOString(),
-    qualityProfileId: options.qualityProfileId ?? show.qualityProfileId,
+    qualityProfileId: options.qualityProfileId ?? seriesData.qualityProfileId,
     monitored: options.monitored ?? true,
-    seriesType: options.seriesType,
-    seasonFolder: options.seasonFolder,
+    seriesType: options.seriesType ?? seriesData.seriesType,
+    volumeFolder: options.volumeFolder,
     monitorNewItems: options.monitorNewItems,
     tags: options.tags ?? [],
     path: `${(options.rootFolderPath ?? ROOT_FOLDER).replace(
       /\/$/,
       ''
-    )}/${seriesFolder(show)}`,
+    )}/${seriesFolder(seriesData)}`,
   };
 
   db.series.push(series);
-  seedShowEpisodes(db, { ...show, airing: null }, id, false);
+  seedSeriesWorks(db, seriesData, series, false);
   applyMonitor(db, series, options.monitor ?? 'all');
 
   return series;

@@ -46,12 +46,15 @@ function DemoFrame({ request }: DemoFrameProps) {
   const [frameSrc, setFrameSrc] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const handledNonce = useRef(0);
+  const revealTimer = useRef<number>();
   const isLive = !isPhone && !isSmallScreen;
   const isPhoneLayout = isPhone && isPortraitScreen;
 
   useEffect(() => {
     setIsLoaded(false);
-  }, [isLive]);
+
+    return () => window.clearTimeout(revealTimer.current);
+  }, [isLive, frameSrc]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -114,9 +117,10 @@ function DemoFrame({ request }: DemoFrameProps) {
 
       setTheme(nextTheme);
 
-      if (frameRef.current && isLoaded) {
-        setIsLoaded(false);
-        frameRef.current.contentWindow?.location.reload();
+      const root = frameRef.current?.contentDocument?.documentElement;
+
+      if (root) {
+        root.dataset.theme = nextTheme;
       }
     });
 
@@ -128,12 +132,18 @@ function DemoFrame({ request }: DemoFrameProps) {
     return () => {
       observer.disconnect();
     };
-  }, [isLoaded]);
+  }, []);
 
   const handleFrameLoad = useCallback(() => {
     const frame = frameRef.current;
     const frameWindow = frame?.contentWindow;
     const startedAt = Date.now();
+
+    window.clearTimeout(revealTimer.current);
+
+    const revealAfterDelay = () => {
+      revealTimer.current = window.setTimeout(() => setIsLoaded(true), 1000);
+    };
 
     const reveal = () => {
       try {
@@ -143,17 +153,21 @@ function DemoFrame({ request }: DemoFrameProps) {
           !document.querySelector('[class*="LoadingPage-module"]');
 
         if (isReady || Date.now() - startedAt > 10000) {
-          setIsLoaded(true);
+          if (document) {
+            document.documentElement.dataset.theme = currentTheme();
+          }
+
+          revealAfterDelay();
 
           return;
         }
       } catch {
-        setIsLoaded(true);
+        revealAfterDelay();
 
         return;
       }
 
-      window.setTimeout(reveal, 150);
+      revealTimer.current = window.setTimeout(reveal, 150);
     };
 
     reveal();
@@ -206,7 +220,7 @@ function DemoFrame({ request }: DemoFrameProps) {
         <div className={classNames(styles.viewport, styles.isPhone)}>
           <img
             className={styles.poster}
-            src={`/img/demo-${theme}-mobile.webp`}
+            src={`/img/demo-${theme}-mobile.avif`}
             alt=""
             width={PHONE_WIDTH}
             height={PHONE_HEIGHT}
@@ -232,7 +246,7 @@ function DemoFrame({ request }: DemoFrameProps) {
                 styles.poster,
                 isLive && isLoaded && styles.isHidden
               )}
-              src={`/img/demo-${theme}.webp`}
+              src={`/img/demo-${theme}.avif`}
               alt=""
               width={DEMO_WIDTH}
               height={DEMO_HEIGHT}

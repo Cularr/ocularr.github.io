@@ -17,7 +17,7 @@
     "stylelint": "stylelint \"frontend/**/*.css\" --config frontend/.stylelintrc",
     "build:demo": "node --experimental-strip-types scripts/buildDemo.mts",
     "build:demo-api": "vite build --config vite.demo.config.ts && node --experimental-strip-types scripts/finalizeDemo.mts",
-    "build:shows": "node --experimental-strip-types scripts/buildShows.mts && node --experimental-strip-types scripts/finalizeDemo.mts"
+    "build:series": "node --experimental-strip-types scripts/buildSeries.mts && node --experimental-strip-types scripts/finalizeDemo.mts"
   },
   "repository": "https://github.com/cularr/ocularr.github.io",
   "author": "Ocularr",

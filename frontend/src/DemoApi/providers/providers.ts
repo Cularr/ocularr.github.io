@@ -6,19 +6,14 @@ import {
   PRIVATE_VALUE,
   storedValues,
 } from './fields';
-import {
-  definitionFor,
-  definitions,
-  implementationName,
-  providerKind,
-} from './registry';
+import { definitionFor, definitions, implementationName } from './registry';
 
 function kindDefaults(
   kind: string,
   definition: ProviderDefinition,
   index: number
 ): JsonObject {
-  switch (providerKind(kind)) {
+  switch (kind) {
     case 'indexer':
       return {
         enableRss: definition.supportsRss ?? true,
@@ -28,7 +23,7 @@ function kindDefaults(
         supportsSearch: definition.supportsSearch ?? true,
         protocol: definition.protocol ?? 'unknown',
         priority: 25,
-        seasonSearchMaximumSingleEpisodeAge: 0,
+        volumeSearchMaximumSingleChapterAge: 0,
         downloadClientId: 0,
       };
     case 'downloadclient':
@@ -42,14 +37,14 @@ function kindDefaults(
     case 'importlist':
       return {
         enableAutomaticAdd: true,
-        searchForMissingEpisodes: true,
+        searchForMissingChapters: true,
         shouldMonitor: 'all',
         monitorNewItems: 'all',
         rootFolderPath: '',
         qualityProfileId: 0,
-        seriesType: 'standard',
+        ordering: 'hierarchical',
         language: ENGLISH,
-        seasonFolder: true,
+        volumeFolder: true,
         listType: definition.listType ?? 'other',
         listOrder: index,
         minRefreshInterval: definition.minRefreshInterval ?? '06:00:00',
@@ -103,7 +98,7 @@ function schemaResource(
 }
 
 export function providerSchema(kind: string): JsonObject[] {
-  return (definitions[providerKind(kind)] ?? []).map((definition, index) => ({
+  return (definitions[kind] ?? []).map((definition, index) => ({
     ...schemaResource(kind, definition, index),
     presets: definition.presets.map((preset) => ({
       ...schemaResource(
@@ -127,7 +122,7 @@ export function providerResource(kind: string, item: JsonObject): JsonObject {
     return item;
   }
 
-  const index = (definitions[providerKind(kind)] ?? []).indexOf(definition);
+  const index = (definitions[kind] ?? []).indexOf(definition);
   const { fields: _fields, ...rest } = item;
 
   return {
@@ -180,7 +175,7 @@ export function seedProvider(
     return null;
   }
 
-  const index = (definitions[providerKind(kind)] ?? []).indexOf(definition);
+  const index = (definitions[kind] ?? []).indexOf(definition);
 
   return {
     id,

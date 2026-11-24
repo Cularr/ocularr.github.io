@@ -1,19 +1,34 @@
 import { DemoDb } from './state/store';
 
-const KEY = 'sonarr-demo-state';
+const KEY = 'ocularr-demo-state';
+
+const LOCK_NAME = `${KEY}:save`;
 
 const MAX_AGE = 12 * 60 * 60 * 1000;
 
+const TAB_ID = Math.random().toString(36).slice(2);
+
 interface Snapshot {
+  revision: string;
   version: string;
   savedAt: number;
   db: DemoDb;
 }
 
+let knownRevision: string | null = null;
+
+function storedRevision() {
+  const head = window.localStorage.getItem(KEY)?.slice(0, 100) ?? '';
+
+  return /^\{"revision":"([^"]+)"/.exec(head)?.[1] ?? null;
+}
+
 export function loadSnapshot(version: string): DemoDb | null {
   try {
-    const raw = window.sessionStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(KEY);
     const snapshot = raw ? (JSON.parse(raw) as Snapshot) : null;
+
+    knownRevision = snapshot?.revision ?? null;
 
     if (
       !snapshot ||
@@ -36,12 +51,31 @@ export function loadSnapshot(version: string): DemoDb | null {
   }
 }
 
-export function saveSnapshot(version: string, db: DemoDb) {
+function writeSnapshot(version: string, db: DemoDb) {
   try {
-    const snapshot: Snapshot = { version, savedAt: Date.now(), db };
+    if (storedRevision() !== knownRevision) {
+      return;
+    }
 
-    window.sessionStorage.setItem(KEY, JSON.stringify(snapshot));
+    const savedAt = Date.now();
+    const revision = `${savedAt}:${TAB_ID}`;
+    const snapshot: Snapshot = { revision, version, savedAt, db };
+
+    window.localStorage.setItem(KEY, JSON.stringify(snapshot));
+    knownRevision = revision;
   } catch {
     return;
   }
+}
+
+export function saveSnapshot(version: string, db: DemoDb) {
+  const locks = navigator.locks as LockManager | undefined;
+
+  if (!locks) {
+    return;
+  }
+
+  locks
+    .request(LOCK_NAME, () => writeSnapshot(version, db))
+    .catch(() => undefined);
 }

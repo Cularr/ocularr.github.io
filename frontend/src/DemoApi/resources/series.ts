@@ -1,5 +1,6 @@
-import { ENGLISH, URL_BASE } from '../constants';
-import { DemoEpisode, DemoSeries, JsonObject } from '../DemoTypes';
+import { ENGLISH } from '../constants';
+import { DemoSeries, DemoWork, JsonObject, QualityInfo } from '../DemoTypes';
+import { qualityModel } from '../qualities/model';
 import { cleanTitle, slug } from '../slug';
 import { folderName, seriesFolder, seriesPath } from '../state/paths';
 import { DemoDb } from '../state/store';
@@ -8,228 +9,183 @@ function seriesSlug(series: DemoSeries) {
   return slug(series.title);
 }
 
-function statistics(db: DemoDb, episodes: DemoEpisode[]) {
+export function seriesStatistics(
+  db: DemoDb,
+  series: DemoSeries,
+  volume?: DemoWork
+) {
   const now = Date.now();
-  const files = db.episodeFiles.filter((f) =>
-    episodes.some((e) => e.episodeFileId === f.id)
+  const seriesWorks = db.works.filter((work) => work.seriesId === series.id);
+  let works = seriesWorks.filter((work) => work.inEdition);
+  let files = db.workFiles.filter((file) => file.seriesId === series.id);
+
+  if (volume) {
+    const chapters = seriesWorks.filter(
+      (work) =>
+        work.kind === 'chapter' && work.parentWorkIds.includes(volume.id)
+    );
+    const chapterIds = new Set(chapters.map((work) => work.id));
+    const partials = seriesWorks.filter(
+      (work) =>
+        work.kind === 'partialChapter' &&
+        work.parentWorkIds.some((id) => chapterIds.has(id))
+    );
+    const memberFileIds = new Set(
+      [volume, ...chapters, ...partials].map((work) => work.workFileId)
+    );
+
+    works = chapters.length ? chapters : [volume];
+    files = files.filter((file) => memberFileIds.has(file.id));
+  }
+
+  const fileIds = new Set(files.map((file) => file.id));
+  const workFileCount = works.filter((work) =>
+    fileIds.has(work.workFileId)
+  ).length;
+  const chapterTotal = works.filter(
+    (work) =>
+      fileIds.has(work.workFileId) ||
+      (work.monitored &&
+        (!work.releaseDateUtc || Date.parse(work.releaseDateUtc) <= now))
+  ).length;
+  const qualities = Array.from(
+    new Map(
+      files.map((file) => {
+        const { quality } = qualityModel(file.quality);
+        return [quality.id, quality];
+      })
+    ).values()
   );
-  const aired = episodes.filter(
-    (e) => e.episodeFileId || (e.monitored && Date.parse(e.airDateUtc) < now)
-  );
-  const episodeFileCount = files.length;
-  const episodeCount = aired.length;
+
+  if (!volume) {
+    const profile = db.collections.qualityprofile.find(
+      (item) => item.id === series.qualityProfileId
+    );
+    const items = (profile?.items ?? []) as JsonObject[];
+    const indexes = new Map<number, number>();
+
+    items.forEach((item, index) => {
+      const children = (item.items ?? []) as JsonObject[];
+
+      for (const entry of [item, ...children]) {
+        const quality = entry.quality as QualityInfo | undefined;
+
+        if (quality && !indexes.has(quality.id)) {
+          indexes.set(quality.id, index);
+        }
+      }
+    });
+
+    qualities.sort(
+      (a, b) => (indexes.get(a.id) ?? 0) - (indexes.get(b.id) ?? 0)
+    );
+  }
 
   return {
-    episodeCount,
-    episodeFileCount,
-    totalEpisodeCount: episodes.length,
-    monitoredEpisodeCount: episodes.filter((e) => e.monitored).length,
+    chapterCount: chapterTotal,
+    totalChapterCount: works.length,
+    monitoredChapterCount: works.filter((e) => e.monitored).length,
+    fileCount: files.length,
+    workFileCount,
+    percentOfChapters: chapterTotal ? (workFileCount * 100) / chapterTotal : 0,
+    workFileQualities: qualities,
     sizeOnDisk: files.reduce((total, f) => total + f.size, 0),
-    percentOfEpisodes: episodeCount
-      ? (episodeFileCount / episodeCount) * 100
-      : 0,
     releaseGroups: Array.from(new Set(files.map((f) => f.releaseGroup))),
-    releaseTypes: [],
-    episodeFileQualities: [],
+    releaseTypes: Array.from(
+      new Set(files.map((file) => file.releaseType ?? 'singleChapter'))
+    ),
   };
 }
 
-function seriesImages(series: DemoSeries) {
-  const base = `${URL_BASE}/MediaCover/${series.tvdbId}`;
-  const images: JsonObject[] = [];
-
-  if (series.hasPoster) {
-    images.push({
-      coverType: 'poster',
-      url: `${base}/poster.jpg`,
-      remoteUrl: `${base}/poster.jpg`,
-    });
-  }
-
-  if (series.hasBanner) {
-    images.push({
-      coverType: 'banner',
-      url: `${base}/banner.jpg`,
-      remoteUrl: `${base}/banner.jpg`,
-    });
-  }
-
-  if (series.hasFanart) {
-    images.push({
-      coverType: 'fanart',
-      url: `${base}/fanart.jpg`,
-      remoteUrl: `${base}/fanart.jpg`,
-    });
-  }
-
-  return images;
+function seriesEditionWorks(db: DemoDb, seriesId: number) {
+  return db.works.filter(
+    (work) => work.seriesId === seriesId && work.inEdition
+  );
 }
 
-function seasonAirings(
-  episodes: DemoEpisode[],
-  seasonNumber: number,
-  now: number
-) {
-  const times = episodes
-    .filter((e) => e.seasonNumber === seasonNumber)
-    .map((e) => Date.parse(e.airDateUtc))
-    .sort((a, b) => a - b);
-  const previous = times.filter((time) => time <= now).pop();
-  const next = times.find((time) => time > now);
-
+function baseResource(series: DemoSeries) {
   return {
-    previousAiring: previous ? new Date(previous).toISOString() : undefined,
-    nextAiring: next ? new Date(next).toISOString() : undefined,
+    title: series.title,
+    sortTitle: series.title.toLowerCase().replace(/^the /, ''),
+    titleSlug: seriesSlug(series),
+    cleanTitle: cleanTitle(series.title),
+    alternateTitles: [],
+    status: series.status === 'ended' ? 'completed' : 'ongoing',
+    ended: series.status === 'ended',
+    overview: series.overview,
+    originalLanguage: ENGLISH,
+    language: ENGLISH,
+    originalTitle: series.title,
+    cleanOriginalTitle: cleanTitle(series.title),
+    isExcluded: false,
+    translations: [],
+    originalCountry: 'us',
+    year: series.year,
+    monitorNewItems: series.monitorNewItems ?? 'all',
+    seriesType: series.seriesType ?? 'manga',
+    genres: series.genres,
+    ...series.metadata,
+    foreignSeriesId: series.foreignSeriesId,
   };
 }
 
 export function seriesResource(db: DemoDb, series: DemoSeries): JsonObject {
   const now = Date.now();
-  const episodes = db.episodes.filter((e) => e.seriesId === series.id);
-  const seasonNumbers = Array.from(
-    new Set(episodes.map((e) => e.seasonNumber))
-  ).sort((a, b) => a - b);
-  const sorted = [...episodes].sort(
-    (a, b) => Date.parse(a.airDateUtc) - Date.parse(b.airDateUtc)
-  );
-  const next = sorted.find((e) => Date.parse(e.airDateUtc) > now);
-  const previous = [...sorted]
-    .reverse()
-    .find((e) => Date.parse(e.airDateUtc) <= now);
-  const first = sorted[0];
-  const stats = statistics(db, episodes);
+  const works = seriesEditionWorks(db, series.id);
+  const releaseDates = works
+    .filter((work) => work.monitored)
+    .map((work) => Date.parse(work.releaseDateUtc))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  const next = releaseDates.find((date) => date >= now);
+  const previous = releaseDates.filter((date) => date < now).pop();
+  const volumes = works
+    .filter((work) => work.kind === 'volume')
+    .sort((a, b) => a.number - b.number);
+  const path = seriesPath(series);
 
   return {
+    ...baseResource(series),
     id: series.id,
-    title: series.title,
-    sortTitle: series.title.toLowerCase().replace(/^the /, ''),
-    titleSlug: seriesSlug(series),
-    cleanTitle: cleanTitle(series.title),
-    alternateTitles: [],
-    status: series.status,
-    ended: series.status === 'ended',
-    overview: series.overview,
-    network: series.network,
-    airTime: series.airTime,
-    images: seriesImages(series),
-    originalLanguage: ENGLISH,
-    language: ENGLISH,
-    originalTitle: series.title,
-    cleanOriginalTitle: cleanTitle(series.title),
-    folders: [
-      {
-        language: ENGLISH,
-        folder: folderName(seriesPath(series)),
-      },
-    ],
-    isExcluded: false,
-    translations: [],
-    seasonType: 'official',
-    seasonTypes: [
-      {
-        name: 'Aired',
-        type: 'official',
-        seasonNumbers,
-        episodeCount: episodes.length,
-      },
-    ],
-    originalCountry: 'us',
-    seasons: seasonNumbers.map((seasonNumber) => ({
-      seasonNumber,
-      title: null,
-      monitored: series.seasonMonitored[seasonNumber] ?? true,
-      statistics: {
-        ...statistics(
-          db,
-          episodes.filter((e) => e.seasonNumber === seasonNumber)
-        ),
-        ...seasonAirings(episodes, seasonNumber, now),
-      },
-      images: [],
-    })),
-    year: series.year,
-    path: seriesPath(series),
+    folders: [{ language: ENGLISH, folder: folderName(path) }],
+    path,
     qualityProfileId: series.qualityProfileId,
-    seasonFolder: series.seasonFolder ?? true,
     monitored: series.monitored,
-    monitorNewItems: series.monitorNewItems ?? 'all',
-    useSceneNumbering: false,
-    runtime: series.runtime,
-    tvdbId: series.tvdbId,
-    tvRageId: 0,
-    tvMazeId: series.tvMazeId,
-    tmdbId: series.tmdbId,
-    firstAired: first?.airDateUtc,
-    lastAired: series.status === 'ended' ? previous?.airDateUtc : undefined,
-    nextAiring: next?.airDateUtc,
-    previousAiring: previous?.airDateUtc,
-    seriesType: series.seriesType ?? 'standard',
-    imdbId: series.imdbId,
-    certification: series.certification,
-    genres: series.genres,
+    nextReleasing:
+      next === undefined ? undefined : new Date(next).toISOString(),
+    previousReleasing:
+      previous === undefined ? undefined : new Date(previous).toISOString(),
     tags: series.tags,
     added: series.added,
     ratings: { votes: 1200 + series.id * 37, value: series.rating },
-    statistics: { ...stats, seasonCount: seasonNumbers.length },
-    rootFolderPath: seriesPath(series).replace(/\/[^/]+$/, ''),
+    statistics: {
+      ...seriesStatistics(db, series),
+      volumeCount: volumes.filter((volume) => (volume.volumeNumber ?? 0) > 0)
+        .length,
+    },
+    volumeFolder: series.volumeFolder ?? true,
+    volumes: volumes.map((volume) => ({
+      workId: volume.id,
+      volumeNumber: volume.volumeNumber,
+      numberLabel: volume.numberLabel,
+      title: volume.title,
+      monitored: volume.monitored,
+      statistics: seriesStatistics(db, series, volume),
+    })),
+    rootFolderPath: path.replace(/\/[^/]+$/, ''),
   };
 }
 
-export function lookupResource(series: DemoSeries, seasonNumbers: number[]) {
+export function lookupResource(series: DemoSeries) {
   return {
-    title: series.title,
-    sortTitle: series.title.toLowerCase().replace(/^the /, ''),
-    titleSlug: seriesSlug(series),
-    cleanTitle: cleanTitle(series.title),
-    alternateTitles: [],
-    status: series.status,
-    ended: series.status === 'ended',
-    overview: series.overview,
-    network: series.network,
-    airTime: series.airTime,
-    images: seriesImages(series),
-    originalLanguage: ENGLISH,
-    language: ENGLISH,
-    originalTitle: series.title,
-    cleanOriginalTitle: cleanTitle(series.title),
-    translations: [],
-    originalCountry: 'us',
-    seasonType: 'official',
-    seasonTypes: [],
-    seasons: seasonNumbers.map((seasonNumber) => ({
-      seasonNumber,
-      title: null,
-      monitored: true,
-      images: [],
-    })),
+    ...baseResource(series),
     folders: [{ language: ENGLISH, folder: seriesFolder(series) }],
-    isExcluded: false,
-    year: series.year,
     qualityProfileId: 0,
-    seasonFolder: false,
+    volumeFolder: false,
     monitored: false,
-    monitorNewItems: 'all',
-    useSceneNumbering: false,
-    runtime: series.runtime,
-    tvdbId: series.tvdbId,
-    tvRageId: 0,
-    tvMazeId: series.tvMazeId,
-    tmdbId: series.tmdbId,
-    seriesType: 'standard',
-    imdbId: series.imdbId,
-    certification: series.certification,
-    genres: series.genres,
+    volumes: [],
     tags: [],
     added: '0001-01-01T00:00:00Z',
     ratings: { votes: 900, value: series.rating },
-    statistics: {
-      seasonCount: seasonNumbers.length,
-      episodeFileCount: 0,
-      episodeCount: 0,
-      totalEpisodeCount: 0,
-      sizeOnDisk: 0,
-      releaseGroups: [],
-      percentOfEpisodes: 0,
-    },
   };
 }

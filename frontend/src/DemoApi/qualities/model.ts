@@ -10,7 +10,7 @@ export function qualityInfo(quality: QualityInfo) {
     id: quality.id,
     name: quality.name,
     source: quality.source,
-    resolution: quality.resolution,
+    tier: quality.tier,
   };
 }
 

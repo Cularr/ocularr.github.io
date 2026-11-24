@@ -23,6 +23,11 @@ const KINDS: { kind: string; folders: string[]; base: string }[] = [
     folders: ['Download/Clients'],
     base: 'DownloadClientBase',
   },
+  {
+    kind: 'pluginsource',
+    folders: ['Plugins/Sources'],
+    base: 'PluginSourceBase',
+  },
   { kind: 'importlist', folders: ['ImportLists'], base: 'ImportListBase' },
   { kind: 'connection', folders: ['Notifications'], base: 'NotificationBase' },
   {
@@ -53,12 +58,13 @@ const NOTIFICATION_EVENTS: [string, string][] = [
   ['OnRename', 'OnRename'],
   ['OnSeriesAdd', 'OnSeriesAdd'],
   ['OnSeriesDelete', 'OnSeriesDelete'],
-  ['OnEpisodeFileDelete', 'OnEpisodeFileDelete'],
-  ['OnEpisodeFileDeleteForUpgrade', 'OnEpisodeFileDelete'],
+  ['OnWorkFileDelete', 'OnWorkFileDelete'],
+  ['OnWorkFileDeleteForUpgrade', 'OnWorkFileDelete'],
   ['OnHealthIssue', 'OnHealthIssue'],
   ['OnHealthRestored', 'OnHealthRestored'],
   ['OnApplicationUpdate', 'OnApplicationUpdate'],
   ['OnManualInteractionRequired', 'OnManualInteractionRequired'],
+  ['OnChapterRetag', 'OnChapterRetag'],
 ];
 
 const DEFAULT_REFRESH_HOURS = 6;

@@ -2,18 +2,18 @@ import { Collections } from '../collections/items';
 import {
   DemoBlocklist,
   DemoCommand,
-  DemoEpisode,
-  DemoEpisodeFile,
   DemoHistory,
   DemoQueueItem,
   DemoSeries,
+  DemoWork,
+  DemoWorkFile,
   JsonObject,
 } from '../DemoTypes';
 
 export interface DemoDb {
   series: DemoSeries[];
-  episodes: DemoEpisode[];
-  episodeFiles: DemoEpisodeFile[];
+  works: DemoWork[];
+  workFiles: DemoWorkFile[];
   queue: DemoQueueItem[];
   history: DemoHistory[];
   blocklist: DemoBlocklist[];

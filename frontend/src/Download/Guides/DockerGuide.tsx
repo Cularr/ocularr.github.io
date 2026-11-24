@@ -100,7 +100,7 @@ function DockerGuide() {
                 label: 'docker run',
                 code: [
                   'docker run -d --name ocularr \\',
-                  '  -p 8383:8383 \\',
+                  '  -p 8484:8484 \\',
                   '  -e PUID=1000 -e PGID=1000 -e UMASK=002 \\',
                   '  -v /path/to/config:/config \\',
                   '  -v /path/to/data:/data \\',
@@ -117,7 +117,7 @@ function DockerGuide() {
                   // '    image: ghcr.io/hotio/ocularr:release',
                   '    image: <ocularr-image>',
                   '    ports:',
-                  '      - 8383:8383',
+                  '      - 8484:8484',
                   '    environment:',
                   '      - PUID=1000',
                   '      - PGID=1000',

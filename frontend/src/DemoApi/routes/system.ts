@@ -1,4 +1,4 @@
-import { DAY, HOUR, INSTALLED_VERSION, MINUTE } from '../constants';
+import { DAY, HOUR, INSTALLED_VERSION, MINUTE, URL_BASE } from '../constants';
 import {
   languageIdentifier,
   languageResource,
@@ -6,9 +6,11 @@ import {
 } from '../languages';
 import { statisticsResource, updateResources } from '../resources/system';
 import { currentVersion } from '../state/version';
-import { fileSystem } from './fileSystem';
-import { parseTitle } from './parse';
+import { fileSystem, mediaFiles } from './fileSystem';
 import { notAvailable, paged, Route } from './request';
+
+const startTime = new Date(Date.now() - 3 * DAY).toISOString();
+const buildTime = new Date(Date.now() - 20 * DAY).toISOString();
 
 const INDEXER_FLAGS = [
   'Freeleech',
@@ -85,27 +87,41 @@ export const systemRoutes: Route[] = [
   {
     method: 'GET',
     pattern: /^\/filesystem$/,
-    handler: (db, request) => fileSystem(db, request.query.get('path') ?? ''),
+    handler: (db, { query }) =>
+      fileSystem(
+        db,
+        query.get('path') ?? '',
+        query.get('includeFiles') === 'true',
+        query.get('allowFoldersWithoutTrailingSlashes') === 'true'
+      ),
   },
   {
     method: 'GET',
     pattern: /^\/filesystem\/type$/,
-    handler: () => ({ type: 'folder' }),
+    handler: (db, { query }) => {
+      const path = query.get('path') ?? '';
+      const directory = path.slice(0, path.lastIndexOf('/') + 1);
+      return {
+        type: mediaFiles(db, directory).some((f) => f.path === path)
+          ? 'file'
+          : 'folder',
+      };
+    },
   },
   {
     method: 'GET',
     pattern: /^\/filesystem\/mediafiles$/,
-    handler: () => [],
+    handler: (db, { query }) => mediaFiles(db, query.get('path') ?? ''),
   },
   {
     method: 'GET',
     pattern: /^\/parse$/,
-    handler: (db, request) => parseTitle(db, request.query.get('title') ?? ''),
+    handler: () => notAvailable('Parsing is not available in the demo'),
   },
   {
     method: 'GET',
     pattern:
-      /^\/(rename|rename\/bulk|manualimport|health|log\/file|log\/file\/update|system\/backup|system\/routes)$/,
+      /^\/(system\/plugins(?:\/schema)?|manualimport|health|log\/file|log\/file\/update|system\/backup|system\/routes)$/,
     handler: () => [],
   },
   {
@@ -148,15 +164,15 @@ export const systemRoutes: Route[] = [
     method: 'GET',
     pattern: /^\/system\/status$/,
     handler: (db) => ({
-      appName: 'Sonarr',
-      instanceName: String(db.settings.general.instanceName ?? 'Sonarr'),
+      appName: 'Ocularr',
+      instanceName: String(db.settings.general.instanceName ?? 'Ocularr'),
       version: currentVersion(db),
-      buildTime: new Date(Date.now() - 20 * DAY).toISOString(),
+      buildTime,
       isDebug: false,
       isProduction: true,
       isAdmin: false,
       isUserInteractive: false,
-      startupPath: '/app/sonarr/bin',
+      startupPath: '/app/ocularr/bin',
       appData: '/config',
       osName: 'debian',
       osVersion: '12',
@@ -165,19 +181,20 @@ export const systemRoutes: Route[] = [
       isOsx: false,
       isWindows: false,
       isDocker: true,
+      isContainerized: true,
       mode: 'console',
       branch: String(db.settings.general.branch ?? 'main'),
-      authentication: 'forms',
-      migrationVersion: 220,
-      urlBase: '',
-      runtimeVersion: '8.0.10',
+      authentication: db.settings.general.authenticationMethod,
+      migrationVersion: 3,
+      urlBase: URL_BASE,
+      runtimeVersion: '10.0.15',
       runtimeName: '.NET',
-      startTime: new Date(Date.now() - 3 * DAY).toISOString(),
+      startTime,
       packageVersion: '',
       packageAuthor: '',
       packageUpdateMechanism: 'builtIn',
       packageUpdateMechanismMessage: '',
-      databaseVersion: '3.46.1',
+      databaseVersion: '3.53.4',
       databaseType: 'sqLite',
     }),
   },
@@ -226,10 +243,13 @@ export const systemRoutes: Route[] = [
             time: new Date(Date.now() - HOUR).toISOString(),
             level: 'info',
             logger: 'Bootstrap',
-            message: `Starting Sonarr - /app/sonarr/bin/Sonarr - Version ${INSTALLED_VERSION}`,
+            message: `Starting Ocularr - /app/ocularr/bin/Ocularr - Version ${INSTALLED_VERSION}`,
           },
         ],
-        (item) => item
+        (item) => item,
+        { id: (item) => item.id, time: (item) => item.time },
+        'id',
+        'ascending'
       ),
   },
 ];

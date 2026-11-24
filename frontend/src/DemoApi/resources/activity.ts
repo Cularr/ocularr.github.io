@@ -6,14 +6,17 @@ import {
   JsonObject,
 } from '../DemoTypes';
 import { qualityModel } from '../qualities/model';
+import { FULL_VOLUME_NOT_RELEASED } from '../simulation/releases';
 import { DemoDb } from '../state/store';
-import { episodeResource } from './episode';
 import { seriesResource } from './series';
+import { workResource } from './work';
 
 export function releaseResource(db: DemoDb, release: DemoRelease): JsonObject {
   const series = db.series.find((s) => s.id === release.seriesId);
-  const episodes = db.episodes.filter((e) => release.episodeIds.includes(e.id));
-  const first = episodes[0];
+  const works = db.works.filter(
+    (e) => e.seriesId === release.seriesId && release.workIds.includes(e.id)
+  );
+  const first = works[0];
   const rejected = release.rejections.length > 0;
 
   return {
@@ -22,15 +25,15 @@ export function releaseResource(db: DemoDb, release: DemoRelease): JsonObject {
       quality: qualityModel(release.quality),
       releaseGroup: release.releaseGroup,
       releaseHash: '',
-      fullSeason: !!release.fullSeason,
-      seasonNumbers: first ? [first.seasonNumber] : [],
+      fullVolume: !!release.fullVolume,
+      volumeNumbers: first?.volumeNumber == null ? [] : [first.volumeNumber],
       seriesTitle: series?.title ?? '',
-      episodeNumbers: release.fullSeason
-        ? []
-        : episodes.map((e) => e.episodeNumber),
-      isDaily: false,
+      chapterNumbers: release.fullVolume ? [] : works.map((e) => e.number),
+      packChapterNumbers: [],
+      isChronological: series?.metadata.ordering === 'chronological',
       isAbsoluteNumbering: false,
-      isPossibleSpecialEpisode: false,
+      isPossibleSpecialChapter: false,
+      isSplitChapter: false,
       special: false,
     },
     release: {
@@ -42,8 +45,7 @@ export function releaseResource(db: DemoDb, release: DemoRelease): JsonObject {
       indexerId: release.indexerId,
       indexer: release.indexer,
       title: release.title,
-      tvdbId: series?.tvdbId ?? 0,
-      tvRageId: 0,
+      foreignSeriesId: series?.foreignSeriesId,
       publishDate: new Date(Date.now() - release.ageHours * HOUR).toISOString(),
       commentUrl: '',
       downloadUrl: '',
@@ -57,27 +59,36 @@ export function releaseResource(db: DemoDb, release: DemoRelease): JsonObject {
       approved: !rejected,
       temporarilyRejected: false,
       rejected,
-      rejections: release.rejections.map((message) => ({
-        message,
-        reason: message.includes('blocklisted')
-          ? 'blocklisted'
-          : 'qualityNotWanted',
-        type: 'permanent',
-      })),
+      rejections: release.rejections.map((message) => {
+        let reason = 'qualityNotWanted';
+
+        if (message.includes('blocklisted')) {
+          reason = 'blocklisted';
+        } else if (message === FULL_VOLUME_NOT_RELEASED) {
+          reason = 'fullVolumeNotReleased';
+        }
+
+        return { message, reason, type: 'permanent' };
+      }),
     },
     qualityWeight: 0,
     languages: [ENGLISH],
     mappedSeriesId: release.seriesId,
-    mappedSeasonNumber: first?.seasonNumber,
-    mappedEpisodeNumbers: episodes.map((e) => e.episodeNumber),
-    mappedEpisodeInfo: episodes.map((e) => ({
+    mappedVolumeNumber: first?.volumeNumber,
+    mappedChapterNumbers: works.map((e) => e.number),
+    mappedAbsoluteChapterNumbers: works.flatMap((work) =>
+      work.absoluteNumber == null ? [] : [work.absoluteNumber]
+    ),
+    mappedWorkInfo: works.map((e) => ({
       id: e.id,
-      episodeFileId: e.episodeFileId,
-      seasonNumber: e.seasonNumber,
-      episodeNumber: e.episodeNumber,
+      volumeNumber: e.volumeNumber,
+      chapterNumber: e.number,
+      numberLabel: e.numberLabel,
+      absoluteChapterNumber: e.absoluteNumber,
+      kind: e.kind,
       title: e.title,
     })),
-    episodeRequested: true,
+    workRequested: true,
     downloadAllowed: true,
     releaseWeight: 0,
     customFormats: [],
@@ -89,14 +100,14 @@ export function historyResource(
   db: DemoDb,
   history: DemoHistory,
   includeSeries: boolean,
-  includeEpisode: boolean
+  includeWork: boolean
 ): JsonObject {
   const series = db.series.find((s) => s.id === history.seriesId);
-  const episode = db.episodes.find((e) => e.id === history.episodeId);
+  const work = db.works.find((e) => e.id === history.workId);
 
   return {
     id: history.id,
-    episodeId: history.episodeId,
+    workId: history.workId,
     seriesId: history.seriesId,
     sourceTitle: history.sourceTitle,
     languages: [ENGLISH],
@@ -109,8 +120,7 @@ export function historyResource(
     eventType: history.eventType,
     data: history.data,
     series: includeSeries && series ? seriesResource(db, series) : undefined,
-    episode:
-      includeEpisode && episode ? episodeResource(db, episode) : undefined,
+    work: includeWork && work ? workResource(db, work) : undefined,
   };
 }
 
@@ -120,7 +130,7 @@ export function blocklistResource(db: DemoDb, item: DemoBlocklist): JsonObject {
   return {
     id: item.id,
     seriesId: item.seriesId,
-    episodeIds: item.episodeIds,
+    workIds: item.workIds,
     sourceTitle: item.sourceTitle,
     title: item.sourceTitle,
     languages: [ENGLISH],

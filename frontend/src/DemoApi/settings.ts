@@ -1,4 +1,6 @@
+import { URL_BASE } from './constants';
 import { JsonObject } from './DemoTypes';
+import { TOKEN_EXAMPLES } from './namingTokens';
 
 export function defaultSettings(): Record<string, JsonObject> {
   return {
@@ -19,7 +21,7 @@ export function defaultSettings(): Record<string, JsonObject> {
     general: {
       id: 1,
       bindAddress: '*',
-      port: 8989,
+      port: 8484,
       sslPort: 9898,
       enableSsl: false,
       launchBrowser: true,
@@ -43,9 +45,9 @@ export function defaultSettings(): Record<string, JsonObject> {
       sslCertPath: '',
       sslKeyPath: '',
       sslCertPassword: '',
-      urlBase: '',
+      urlBase: URL_BASE,
       trustedNetworks: '',
-      instanceName: 'Sonarr',
+      instanceName: 'Ocularr',
       applicationUrl: '',
       updateAutomatically: false,
       updateMechanism: 'builtIn',
@@ -65,7 +67,7 @@ export function defaultSettings(): Record<string, JsonObject> {
     },
     mediamanagement: {
       id: 1,
-      autoUnmonitorPreviouslyDownloadedEpisodes: false,
+      autoUnmonitorPreviouslyDownloadedChapters: false,
       recycleBin: '',
       recycleBinCleanupDays: 7,
       downloadPropersAndRepacks: 'preferAndUpgrade',
@@ -76,7 +78,7 @@ export function defaultSettings(): Record<string, JsonObject> {
       setPermissionsLinux: false,
       chmodFolder: '755',
       chownGroup: '',
-      episodeTitleRequired: 'always',
+      chapterTitleRequired: 'always',
       skipFreeSpaceCheckWhenGrabbing: false,
       skipFreeSpaceCheckWhenImporting: false,
       minimumFreeSpaceWhenImporting: 100,
@@ -86,25 +88,27 @@ export function defaultSettings(): Record<string, JsonObject> {
       importExtraFiles: false,
       extraFileExtensions: 'srt',
       enableMediaInfo: true,
+      convertToCbz: false,
+      sharedWorkFiles: 'hardLink',
       userRejectedExtensions: '',
-      seasonPackUpgrade: 'all',
-      seasonPackUpgradeThreshold: 100,
+      volumePackUpgrade: 'all',
+      volumePackUpgradeThreshold: 100,
     },
     naming: {
       id: 1,
-      renameEpisodes: true,
+      renameChapters: true,
       replaceIllegalCharacters: true,
       colonReplacementFormat: 4,
       customColonReplacementFormat: '',
-      multiEpisodeStyle: 5,
-      standardEpisodeFormat:
-        '{Series Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}',
-      dailyEpisodeFormat:
-        '{Series Title} - {Air-Date} - {Episode Title} {Quality Full}',
-      animeEpisodeFormat:
-        '{Series Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}',
+      multiChapterStyle: 5,
+      hierarchicalChapterFormat:
+        '{Series Title} - v{volume:00} c{chapter:00} - {Chapter Title} {Quality Full}',
+      chronologicalChapterFormat:
+        '{Series Title} - {Release-Date} - {Chapter Title} {Quality Full}',
+      sequentialChapterFormat:
+        '{Series Title} - v{volume:00} c{chapter:00} - {Chapter Title} {Quality Full}',
       seriesFolderFormat: '{Series Title}',
-      seasonFolderFormat: 'Season {season}',
+      volumeFolderFormat: 'Volume {volume}',
       specialsFolderFormat: 'Specials',
     },
     indexer: {
@@ -149,23 +153,147 @@ const SAMPLE = {
   seriesTitle: "The Series Title's!",
   seriesCleanTitle: 'The Series Titles!',
   year: 2010,
-  episodeTitle: 'Episode Title (1)',
-  multiEpisodeTitle: 'Episode Title',
-  quality: 'HDTV-720p',
-  qualityFull: 'HDTV-720p Proper',
+  chapterTitle: 'Chapter Title (1)',
+  multiChapterTitle: 'Chapter Title',
+  quality: 'Scan MQ',
+  qualityFull: 'Scan MQ Proper',
 };
 
 function pad(value: number, format: string | undefined) {
-  return String(value).padStart(format ? format.length : 1, '0');
+  const sign = value < 0 ? '-' : '';
+  const [whole, fraction] = Math.abs(value).toString().split('.');
+
+  return (
+    sign +
+    whole.padStart(format?.length ?? 1, '0') +
+    (fraction ? `.${fraction}` : '')
+  );
 }
 
-function renderFormat(
+const CHAPTER_FRACTIONS = { '¼': '25', '½': '5', '¾': '75' };
+
+function formatChapter(chapter: number | string, digits: string | undefined) {
+  if (typeof chapter === 'number') {
+    return pad(chapter, digits);
+  }
+
+  const label = chapter
+    .trim()
+    .replace(
+      /^(\d*)([¼½¾])$/,
+      (_match, whole: string, fraction: keyof typeof CHAPTER_FRACTIONS) =>
+        `${whole}.${CHAPTER_FRACTIONS[fraction]}`
+    );
+
+  return /^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(label)
+    ? pad(Number(label), digits)
+    : chapter;
+}
+
+type AbsoluteNumbering = {
+  numbers: (number | undefined)[];
+  style: number;
+};
+
+function renderAbsolute(
   format: string,
-  season: number,
-  episodes: number[],
-  airDate = '2013-10-30'
+  numbering: AbsoluteNumbering | undefined
 ) {
-  const values: Record<string, string> = {
+  return format.replace(
+    /(?:(?<=\})([- ._]+?))?(\{absolute(?::(0+))?\})(?:([- ._]+?)(?=\{))?/gi,
+    (
+      match,
+      before: string | undefined,
+      token: string,
+      digits: string | undefined,
+      after: string | undefined
+    ) => {
+      const prefix = before ?? '';
+      const suffix = after ?? '';
+
+      if (!numbering || numbering.numbers.some((number) => number == null)) {
+        return match.replace(token, '');
+      }
+
+      const { numbers, style } = numbering;
+      const separator = after ?? before ?? '-';
+      let joiner = '-';
+
+      if (style === 1) {
+        joiner = separator;
+      } else if (style === 2) {
+        joiner = separator.trim() || ' ';
+      }
+
+      const selected =
+        style === 4 || style === 5
+          ? numbers.filter(
+              (_number, index) => index === 0 || index === numbers.length - 1
+            )
+          : numbers;
+
+      return (
+        prefix +
+        selected.map((number) => pad(number!, digits)).join(joiner) +
+        suffix
+      );
+    }
+  );
+}
+
+function chapterRange(
+  chapters: (number | string)[],
+  volumePrefix: string,
+  prefix: string,
+  digits: string | undefined,
+  style: number,
+  separator: string
+) {
+  const [first, ...rest] = chapters.map((chapter) =>
+    formatChapter(chapter, digits)
+  );
+  const start = `${volumePrefix}${prefix}${first}`;
+  const last = rest[rest.length - 1];
+  const scenePrefix = prefix.replace(/^[- ._]+/, '');
+
+  if (!rest.length) {
+    return start;
+  }
+
+  switch (style) {
+    case 1:
+      return (
+        start +
+        rest
+          .map((chapter) => `${separator}${volumePrefix}${prefix}${chapter}`)
+          .join('')
+      );
+    case 2:
+      return start + rest.map((chapter) => `${prefix}${chapter}`).join('');
+    case 3:
+      return (
+        start + rest.map((chapter) => `-${scenePrefix}${chapter}`).join('')
+      );
+    case 4:
+      return `${start}-${last}`;
+    case 5:
+      return `${start}-${scenePrefix}${last}`;
+    default:
+      return `${start}-${rest.join('-')}`;
+  }
+}
+
+export function renderFormat(
+  format: string,
+  volume: number,
+  chapterNumbers: (number | string)[],
+  releaseDate = '2013-10-30',
+  fileValues?: Record<string, string>,
+  absoluteNumbering?: AbsoluteNumbering,
+  chapterStyle = 5
+) {
+  const values: Record<string, string> = fileValues ?? {
+    ...TOKEN_EXAMPLES,
     'series title': SAMPLE.seriesTitle,
     'series titleyear': `${SAMPLE.seriesTitle} (${SAMPLE.year})`,
     'series cleantitle': SAMPLE.seriesCleanTitle,
@@ -173,62 +301,97 @@ function renderFormat(
     'series titlethe': "Series Title's!, The",
     'series titlefirstcharacter': 'S',
     'series year': String(SAMPLE.year),
-    'episode title':
-      episodes.length > 1 ? SAMPLE.multiEpisodeTitle : SAMPLE.episodeTitle,
-    'episode cleantitle': 'Episode Title 1',
+    'chapter title':
+      chapterNumbers.length > 1
+        ? SAMPLE.multiChapterTitle
+        : SAMPLE.chapterTitle,
+    'chapter cleantitle': 'Chapter Title 1',
     'quality full': SAMPLE.qualityFull,
     'quality title': SAMPLE.quality,
-    'air-date': airDate,
-    'air date': airDate.replace(/-/g, ' '),
+    'release-date': releaseDate,
+    'release date': releaseDate.replace(/-/g, ' '),
     'release group': 'RlsGrp',
-    'mediainfo simple': 'x264 DTS',
-    'mediainfo full': 'x264 DTS [EN+DE]',
-    'mediainfo videocodec': 'x264',
-    'mediainfo audiocodec': 'DTS',
-    imdbid: 'tt12345',
-    tvdbid: '12345',
   };
 
-  return format
+  return renderAbsolute(format, absoluteNumbering)
     .replace(
-      /\{(season|episode|absolute)(?::(0+))?\}/gi,
-      (_match, token: string, digits?: string) => {
-        const lower = token.toLowerCase();
+      /(?:(?<=\})([- ._]+?))?((?:v(?:ol(?:ume)?)?[-_. ]*)?)\{volume(?::(0+))?\}([-_. ]*(?:c(?:h(?:ap(?:ter)?)?)?[-_. ]*|x|\W[cx]))\{chapter(?::(0+))?\}(?:([- ._]+?)(?=\{))?|\{(volume|chapter)(?::(0+))?\}|\{([^{}]+)\}/gi,
+      (
+        _match,
+        before: string | undefined,
+        volumePrefix: string | undefined,
+        volumeDigits: string | undefined,
+        chapterPrefix: string | undefined,
+        chapterDigits: string | undefined,
+        after: string | undefined,
+        numbering: string | undefined,
+        digits: string | undefined,
+        token: string
+      ) => {
+        if (chapterPrefix !== undefined) {
+          const range = chapterRange(
+            chapterNumbers,
+            (volumePrefix ?? '') + pad(volume, volumeDigits),
+            chapterPrefix,
+            chapterDigits,
+            chapterStyle,
+            after ?? before ?? ''
+          );
 
-        if (lower === 'season') {
-          return pad(season, digits);
+          return (before ?? '') + range + (after ?? '');
         }
 
-        return episodes
-          .map((episode, index) =>
-            index ? `-E${pad(episode, digits)}` : pad(episode, digits)
-          )
-          .join('');
+        if (numbering) {
+          return numbering.toLowerCase() === 'volume'
+            ? pad(volume, digits)
+            : chapterRange(chapterNumbers, '', '', digits, 4, '');
+        }
+
+        const key = token.toLowerCase().replace(/[._]/g, ' ').trim();
+
+        return values[key] ?? values[key.replace(/\s+/g, ' ')] ?? '';
       }
     )
-    .replace(/\{([^{}]+)\}/g, (_match, token: string) => {
-      const key = token.toLowerCase().replace(/[._]/g, ' ').trim();
-
-      return values[key] ?? values[key.replace(/\s+/g, ' ')] ?? '';
-    })
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
 export function namingExamples(settings: JsonObject, query: URLSearchParams) {
   const read = (key: string) => String(query.get(key) ?? settings[key] ?? '');
-  const standard = read('standardEpisodeFormat');
-  const daily = read('dailyEpisodeFormat');
-  const anime = read('animeEpisodeFormat');
+  const hierarchical = read('hierarchicalChapterFormat');
+  const chronological = read('chronologicalChapterFormat');
+  const sequential = read('sequentialChapterFormat');
+  const style = Number(read('multiChapterStyle'));
+  const sequentialExample = (chapters: number[], numbers: number[]) =>
+    renderFormat(
+      sequential,
+      1,
+      chapters,
+      undefined,
+      undefined,
+      { numbers, style },
+      style
+    );
 
   return {
-    singleEpisodeExample: `${renderFormat(standard, 1, [1])}.mkv`,
-    multiEpisodeExample: `${renderFormat(standard, 1, [1, 2, 3])}.mkv`,
-    dailyEpisodeExample: `${renderFormat(daily, 1, [1])}.mkv`,
-    animeEpisodeExample: `${renderFormat(anime, 1, [1])}.mkv`,
-    animeMultiEpisodeExample: `${renderFormat(anime, 1, [1, 2, 3])}.mkv`,
+    hierarchicalChapterExample: `${renderFormat(hierarchical, 1, [1])}.cbz`,
+    multiChapterExample: `${renderFormat(
+      hierarchical,
+      1,
+      [1, 2, 3],
+      undefined,
+      undefined,
+      undefined,
+      style
+    )}.cbz`,
+    chronologicalChapterExample: `${renderFormat(chronological, 1, [1])}.cbz`,
+    sequentialChapterExample: `${sequentialExample([1], [1])}.cbz`,
+    sequentialMultiChapterExample: `${sequentialExample(
+      [1, 2, 3],
+      [1, 2, 3]
+    )}.cbz`,
     seriesFolderExample: renderFormat(read('seriesFolderFormat'), 1, [1]),
-    seasonFolderExample: renderFormat(read('seasonFolderFormat'), 1, [1]),
+    volumeFolderExample: renderFormat(read('volumeFolderFormat'), 1, [1]),
     specialsFolderExample: renderFormat(read('specialsFolderFormat'), 0, [1]),
   };
 }

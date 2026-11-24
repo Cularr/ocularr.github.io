@@ -1,7 +1,7 @@
-import { DemoEpisode, DemoQueueItem, DemoRelease } from '../DemoTypes';
-import { episodeFileResource, episodeResource } from '../resources/episode';
+import { DemoQueueItem, DemoRelease, DemoWork } from '../DemoTypes';
 import { queueProgress, queueStatus } from '../resources/queue';
 import { seriesResource } from '../resources/series';
+import { workFileResource, workResource } from '../resources/work';
 import { isQueued } from '../state/queries';
 import { qualitySize } from '../state/releaseFactory';
 import { DemoDb, nextId } from '../state/store';
@@ -14,12 +14,12 @@ function emitQueue(db: DemoDb) {
   broadcast('queue/status', 'updated', queueStatus(db));
 }
 
-function emitEpisode(db: DemoDb, episode: DemoEpisode) {
-  const series = db.series.find((s) => s.id === episode.seriesId);
+function emitWork(db: DemoDb, work: DemoWork) {
+  const series = db.series.find((s) => s.id === work.seriesId);
 
-  broadcast('episode', 'updated', episodeResource(db, episode));
-  broadcast('calendar', 'updated', episodeResource(db, episode, true));
-  broadcast('wanted/missing', 'updated', episodeResource(db, episode, true));
+  broadcast('work', 'updated', workResource(db, work));
+  broadcast('calendar', 'updated', workResource(db, work, true));
+  broadcast('wanted/missing', 'updated', workResource(db, work, true));
 
   if (series) {
     broadcast('series', 'updated', seriesResource(db, series));
@@ -31,7 +31,7 @@ export function enqueue(
   release: DemoRelease,
   failAt: number | null = null
 ) {
-  if (release.episodeIds.some((id) => isQueued(db, id))) {
+  if (release.workIds.some((id) => isQueued(db, id))) {
     return null;
   }
 
@@ -51,7 +51,7 @@ export function enqueue(
   db.history.unshift({
     id: nextId(db),
     seriesId: release.seriesId,
-    episodeId: release.episodeIds[0],
+    workId: release.workIds[0],
     sourceTitle: release.title,
     quality: release.quality,
     date: new Date(now).toISOString(),
@@ -66,18 +66,22 @@ export function enqueue(
     },
   });
 
-  db.episodes
-    .filter((e) => release.episodeIds.includes(e.id))
-    .forEach((episode) => emitEpisode(db, episode));
+  db.works
+    .filter((e) => release.workIds.includes(e.id))
+    .forEach((work) => emitWork(db, work));
 
   emitQueue(db);
 
   return item;
 }
 
-export function searchEpisodes(db: DemoDb, episodes: DemoEpisode[]) {
-  episodes.forEach((episode) => {
-    const release = bestRelease(db, episode);
+export function searchWorks(db: DemoDb, works: DemoWork[]) {
+  const lastSearchTime = new Date().toISOString();
+
+  works.forEach((work) => {
+    Object.assign(work, { lastSearchTime });
+
+    const release = bestRelease(db, work);
 
     if (release) {
       enqueue(db, release);
@@ -87,38 +91,39 @@ export function searchEpisodes(db: DemoDb, episodes: DemoEpisode[]) {
 
 function importItem(db: DemoDb, item: DemoQueueItem) {
   const now = new Date().toISOString();
-  const episodes = db.episodes.filter((e) =>
-    item.release.episodeIds.includes(e.id)
-  );
+  const works = db.works.filter((e) => item.release.workIds.includes(e.id));
 
   db.queue = db.queue.filter((q) => q.id !== item.id);
 
-  episodes.forEach((episode) => {
+  works.forEach((work) => {
     const fileId = nextId(db);
     const file = {
       id: fileId,
-      seriesId: episode.seriesId,
-      seasonNumber: episode.seasonNumber,
+      seriesId: work.seriesId,
+      volumeNumber: work.volumeNumber ?? 0,
       quality: item.release.quality,
       size: qualitySize(item.release.quality, fileId),
       releaseGroup: item.release.releaseGroup,
+      releaseType:
+        item.release.releaseType ??
+        (item.release.fullVolume ? 'volumePack' : 'singleChapter'),
       dateAdded: now,
     };
 
-    const replaced = episode.episodeFileId;
+    const replaced = work.workFileId;
 
     if (replaced) {
-      db.episodeFiles = db.episodeFiles.filter((f) => f.id !== replaced);
-      broadcast('episodefile', 'deleted', { id: replaced });
+      db.workFiles = db.workFiles.filter((f) => f.id !== replaced);
+      broadcast('workfile', 'deleted', { id: replaced });
     }
 
-    db.episodeFiles.push(file);
-    episode.episodeFileId = fileId;
+    db.workFiles.push(file);
+    work.workFileId = fileId;
 
     db.history.unshift({
       id: nextId(db),
-      seriesId: episode.seriesId,
-      episodeId: episode.id,
+      seriesId: work.seriesId,
+      workId: work.id,
       sourceTitle: item.release.title,
       quality: item.release.quality,
       date: now,
@@ -131,11 +136,11 @@ function importItem(db: DemoDb, item: DemoQueueItem) {
       },
     });
 
-    const resource = episodeFileResource(db, file);
+    const resource = workFileResource(db, file);
 
     db.history[0].data.importedPath = resource.path;
-    broadcast('episodefile', 'updated', resource);
-    emitEpisode(db, episode);
+    broadcast('workfile', 'updated', resource);
+    emitWork(db, work);
   });
 
   emitQueue(db);
@@ -145,7 +150,7 @@ function blocklistItem(db: DemoDb, item: DemoQueueItem, message: string) {
   db.blocklist.unshift({
     id: nextId(db),
     seriesId: item.release.seriesId,
-    episodeIds: item.release.episodeIds,
+    workIds: item.release.workIds,
     sourceTitle: item.release.title,
     quality: item.release.quality,
     protocol: item.release.protocol,
@@ -155,11 +160,11 @@ function blocklistItem(db: DemoDb, item: DemoQueueItem, message: string) {
   });
 }
 
-function itemEpisodes(db: DemoDb, item: DemoQueueItem) {
-  return db.episodes.filter((e) => item.release.episodeIds.includes(e.id));
+function itemWorks(db: DemoDb, item: DemoQueueItem) {
+  return db.works.filter((e) => item.release.workIds.includes(e.id));
 }
 
-function failItem(db: DemoDb, item: DemoQueueItem) {
+export function failItem(db: DemoDb, item: DemoQueueItem) {
   const message = 'Password protected archive';
 
   db.queue = db.queue.filter((q) => q.id !== item.id);
@@ -167,7 +172,7 @@ function failItem(db: DemoDb, item: DemoQueueItem) {
   db.history.unshift({
     id: nextId(db),
     seriesId: item.release.seriesId,
-    episodeId: item.release.episodeIds[0],
+    workId: item.release.workIds[0],
     sourceTitle: item.release.title,
     quality: item.release.quality,
     date: new Date().toISOString(),
@@ -198,11 +203,11 @@ export function removeQueueItem(
     blocklistItem(db, item, 'Manually removed from the queue');
   }
 
-  itemEpisodes(db, item).forEach((episode) => emitEpisode(db, episode));
+  itemWorks(db, item).forEach((work) => emitWork(db, work));
   emitQueue(db);
 
   if (options.blocklist && !options.skipRedownload) {
-    searchEpisodes(db, itemEpisodes(db, item));
+    searchWorks(db, itemWorks(db, item));
   }
 }
 

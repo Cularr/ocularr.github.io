@@ -1,6 +1,6 @@
 import { JsonObject, JsonValue } from '../DemoTypes';
 import { prepareProvider, providerResource } from '../providers/providers';
-import { PROVIDER_KINDS, providerKind } from '../providers/registry';
+import { PROVIDER_KINDS } from '../providers/registry';
 import {
   prepareSpecification,
   specificationResource,
@@ -13,6 +13,7 @@ const COLLECTIONS = [
   'importlist',
   'connection',
   'metadata',
+  'pluginsource',
   'customformat',
   'delayprofile',
   'releaseprofile',
@@ -28,9 +29,7 @@ const COLLECTIONS = [
 export type Collections = Record<string, JsonObject[]>;
 
 export function collectionName(name: string) {
-  const kind = providerKind(name);
-
-  return COLLECTIONS.includes(kind) ? kind : null;
+  return COLLECTIONS.includes(name) ? name : null;
 }
 
 export function renderItem(

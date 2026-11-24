@@ -2,7 +2,7 @@ import react from '@vitejs/plugin-react';
 import { createHash } from 'crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import path from 'path';
-import { defineConfig, Plugin } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { patchCssModules } from 'vite-css-modules';
 
 const src = path.resolve(import.meta.dirname, 'frontend/src');
@@ -17,6 +17,7 @@ const contentTypes: Record<string, string> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.avif': 'image/avif',
   '.ico': 'image/x-icon',
   '.svg': 'image/svg+xml',
   '.woff': 'font/woff',
@@ -43,12 +44,45 @@ function serveDemo(): Plugin {
           requested = '';
         }
 
-        const file =
-          requested.startsWith(demoDir + path.sep) &&
-          existsSync(requested) &&
-          statSync(requested).isFile()
-            ? requested
-            : path.join(demoDir, 'index.html');
+        if (
+          requested.includes('\0') ||
+          (!requested.startsWith(demoDir + path.sep) && requested !== demoDir)
+        ) {
+          res.statusCode = 404;
+          res.end();
+
+          return;
+        }
+
+        let file = requested;
+
+        if (!existsSync(file) || !statSync(file).isFile()) {
+          const accept = req.headers.accept;
+          const relative = path.relative(demoDir, file);
+          const [folder] = relative.split(path.sep);
+
+          if (
+            ['assets', 'content', 'mediacover', 'sourceicons'].includes(
+              folder.toLowerCase()
+            ) ||
+            relative.includes('.') ||
+            (accept && !accept.includes('text/html'))
+          ) {
+            res.statusCode = 404;
+            res.end();
+
+            return;
+          }
+
+          file = path.join(demoDir, 'index.html');
+
+          if (!existsSync(file) || !statSync(file).isFile()) {
+            res.statusCode = 404;
+            res.end();
+
+            return;
+          }
+        }
 
         res.setHeader(
           'Content-Type',
@@ -85,6 +119,17 @@ function serveStatic(): Plugin {
           requested = '';
         }
 
+        const folderRoot = path.join(root, folder);
+
+        if (
+          requested !== folderRoot &&
+          !requested.startsWith(folderRoot + path.sep)
+        ) {
+          next();
+
+          return;
+        }
+
         if (existsSync(requested) && statSync(requested).isDirectory()) {
           if (!url.pathname.endsWith('/')) {
             res.writeHead(301, { Location: `${url.pathname}/${url.search}` });
@@ -96,11 +141,7 @@ function serveStatic(): Plugin {
           requested = path.join(requested, 'index.html');
         }
 
-        if (
-          !requested.startsWith(root + path.sep) ||
-          !existsSync(requested) ||
-          !statSync(requested).isFile()
-        ) {
+        if (!existsSync(requested) || !statSync(requested).isFile()) {
           next();
 
           return;

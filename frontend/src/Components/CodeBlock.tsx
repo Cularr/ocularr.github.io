@@ -9,13 +9,23 @@ export interface CodeVariant {
 }
 
 interface CodeBlockProps {
-  variants: CodeVariant[];
+  variants: readonly [CodeVariant, ...CodeVariant[]];
   prompt?: string;
 }
 
+const copyMessages = {
+  idle: { label: 'Copy', status: '' },
+  success: { label: 'Copied', status: 'Copied to clipboard' },
+  error: { label: 'Copy failed', status: 'Could not copy to clipboard' },
+};
+
 function CodeBlock({ variants, prompt = '$' }: CodeBlockProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [isCopied, setIsCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'success' | 'error' | null>(
+    null
+  );
+  const isCopied = copyStatus === 'success';
+  const copyMessage = copyMessages[copyStatus ?? 'idle'];
   const selected = variants[selectedIndex] ?? variants[0];
   const variantKey = variants.map((variant) => variant.label).join('|');
 
@@ -24,22 +34,24 @@ function CodeBlock({ variants, prompt = '$' }: CodeBlockProps) {
   }, [variantKey]);
 
   useEffect(() => {
-    if (!isCopied) {
+    if (!copyStatus) {
       return undefined;
     }
 
-    const timeout = window.setTimeout(() => setIsCopied(false), 1600);
+    const timeout = window.setTimeout(() => setCopyStatus(null), 1600);
 
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [isCopied]);
+  }, [copyStatus]);
 
-  const handleCopyPress = useCallback(() => {
-    navigator.clipboard
-      ?.writeText(selected.code)
-      .then(() => setIsCopied(true))
-      .catch(() => setIsCopied(false));
+  const handleCopyPress = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(selected.code);
+      setCopyStatus('success');
+    } catch {
+      setCopyStatus('error');
+    }
   }, [selected.code]);
 
   const handleVariantPress = useCallback(
@@ -76,10 +88,10 @@ function CodeBlock({ variants, prompt = '$' }: CodeBlockProps) {
           onClick={handleCopyPress}
         >
           {isCopied ? <Check size={14} /> : <Copy size={14} />}
-          <span>{isCopied ? 'Copied' : 'Copy'}</span>
+          <span>{copyMessage.label}</span>
         </button>
         <span className={styles.status} role="status">
-          {isCopied ? 'Copied to clipboard' : ''}
+          {copyMessage.status}
         </span>
       </div>
       <pre className={styles.code}>

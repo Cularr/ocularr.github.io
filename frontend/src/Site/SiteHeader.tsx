@@ -1,9 +1,8 @@
 import { Menu, Moon, Sun, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Logo from 'Components/Logo';
+import { currentTheme, type Theme } from './demoWindow';
 import styles from './SiteHeader.module.css';
-
-type Theme = 'light' | 'dark';
 
 const LINKS = [
   { href: '#features', label: 'Features' },
@@ -12,12 +11,6 @@ const LINKS = [
   { href: 'https://opencollective.com/sonarr', label: 'Donate' },
   { href: 'https://github.com/cularr/ocularr', label: 'GitHub' },
 ];
-
-function getTheme(): Theme {
-  return document.documentElement.getAttribute('data-theme') === 'dark'
-    ? 'dark'
-    : 'light';
-}
 
 function saveTheme(theme: Theme) {
   try {
@@ -30,7 +23,7 @@ function saveTheme(theme: Theme) {
 }
 
 function SiteHeader() {
-  const [theme, setTheme] = useState<Theme>(getTheme);
+  const [theme, setTheme] = useState<Theme>(currentTheme);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 

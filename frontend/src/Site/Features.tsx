@@ -30,7 +30,7 @@ const FEATURES: Feature[] = [
   },
   {
     id: 'search',
-    route: '/series/slow-horses',
+    route: '/series/witch-hat-atelier',
     icon: UserSearch,
     title: 'Manual search',
     text: 'See every release for a chapter or volume, compare quality, size and peers, and send the one you want to your download client.',

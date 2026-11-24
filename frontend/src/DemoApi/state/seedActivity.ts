@@ -1,28 +1,32 @@
 import { INDEXERS } from '../collections/seed';
 import { HOUR } from '../constants';
-import { Protocol } from '../DemoTypes';
+import { DemoQueueItem, Protocol } from '../DemoTypes';
+import { failItem } from '../simulation/queue';
 import { seriesPath } from './paths';
 import { buildRelease, sceneName } from './releaseFactory';
-import { isPlaceholderTitle } from './seedEpisodes';
+import { isPlaceholderTitle } from './seedWorks';
 import { DemoDb, nextId } from './store';
 
-function latestAired(db: DemoDb, seriesId: number) {
+function latestReleased(db: DemoDb, seriesId: number) {
   const now = Date.now();
 
-  return db.episodes
+  return db.works
     .filter(
       (e) =>
         e.seriesId === seriesId &&
-        Date.parse(e.airDateUtc) < now &&
+        e.monitored &&
+        Date.parse(e.releaseDateUtc) < now &&
         !isPlaceholderTitle(e.title)
     )
-    .sort((a, b) => Date.parse(b.airDateUtc) - Date.parse(a.airDateUtc))[0];
+    .sort(
+      (a, b) => Date.parse(b.releaseDateUtc) - Date.parse(a.releaseDateUtc)
+    )[0];
 }
 
 export function seedQueue(db: DemoDb) {
   const now = Date.now();
   const seeds: {
-    tvdbId: number;
+    foreignSeriesId: string;
     quality: string;
     protocol: Protocol;
     group: string;
@@ -32,56 +36,56 @@ export function seedQueue(db: DemoDb) {
     failAt: number | null;
   }[] = [
     {
-      tvdbId: 372264,
-      quality: 'WEBDL-1080p',
+      foreignSeriesId: 'f9f3e80a-37bb-8715-9bdd-6d5b1042f4c6',
+      quality: 'Digital HQ',
       protocol: 'usenet',
       group: 'NOCTURNE',
       client: 'SABnzbd',
       progress: 0.46,
-      duration: 110000,
+      duration: 6 * HOUR,
       failAt: null,
     },
     {
-      tvdbId: 402910,
-      quality: 'WEBDL-720p',
+      foreignSeriesId: '3e4b8dbd-8af1-8056-a8ae-b8643731a45a',
+      quality: 'Digital MQ',
       protocol: 'torrent',
       group: 'KESTREL',
       client: 'qBittorrent',
       progress: 0.71,
-      duration: 150000,
+      duration: 8 * HOUR,
       failAt: null,
     },
     {
-      tvdbId: 399959,
-      quality: 'WEBDL-1080p',
+      foreignSeriesId: 'e6b9ad4f-6993-8117-9d80-cace85f48369',
+      quality: 'Digital HQ',
       protocol: 'usenet',
       group: 'LAMPLIGHT',
       client: 'SABnzbd',
-      progress: 0.12,
+      progress: 0.38,
       duration: 90000,
       failAt: 0.38,
     },
   ];
 
   seeds.forEach((seed, index) => {
-    const series = db.series.find((s) => s.tvdbId === seed.tvdbId);
-    const episode = series ? latestAired(db, series.id) : undefined;
+    const series = db.series.find(
+      (s) => s.foreignSeriesId === seed.foreignSeriesId
+    );
+    const work = series ? latestReleased(db, series.id) : undefined;
 
-    if (!series || !episode) {
+    if (!series || !work) {
       return;
     }
 
-    db.episodeFiles = db.episodeFiles.filter(
-      (f) => f.id !== episode.episodeFileId
-    );
-    episode.episodeFileId = 0;
+    db.workFiles = db.workFiles.filter((f) => f.id !== work.workFileId);
+    work.workFileId = 0;
 
-    db.queue.push({
+    const item: DemoQueueItem = {
       id: index + 1,
       release: buildRelease(
         db,
         series,
-        [episode],
+        [work],
         seed.quality,
         seed.protocol,
         seed.group,
@@ -93,32 +97,39 @@ export function seedQueue(db: DemoDb) {
       failAt: seed.failAt,
       state: 'downloading',
       stateChanged: now,
-    });
+    };
+
+    db.queue.push(item);
+
+    if (seed.failAt !== null && seed.progress >= seed.failAt) {
+      failItem(db, item);
+    }
   });
 }
 
 export function seedHistory(db: DemoDb) {
-  const recentFiles = [...db.episodeFiles]
+  const recentFiles = [...db.workFiles]
     .sort((a, b) => Date.parse(b.dateAdded) - Date.parse(a.dateAdded))
     .slice(0, 12);
 
   recentFiles.forEach((file) => {
-    const episode = db.episodes.find((e) => e.episodeFileId === file.id);
+    const work = db.works.find((e) => e.workFileId === file.id);
     const series = db.series.find((s) => s.id === file.seriesId);
 
-    if (!episode || !series) {
+    if (!work || !series) {
       return;
     }
 
-    const title = `${sceneName(series, episode)}.${
-      file.quality.split('-')[1] ?? '1080p'
-    }.WEB.h264-${file.releaseGroup}`;
+    const title = `${sceneName(series, work)}.${file.quality.replace(
+      / /g,
+      '.'
+    )}-${file.releaseGroup}`;
     const imported = Date.parse(file.dateAdded);
 
     db.history.push({
       id: nextId(db),
       seriesId: series.id,
-      episodeId: episode.id,
+      workId: work.id,
       sourceTitle: title,
       quality: file.quality,
       date: new Date(imported - 20 * 60 * 1000).toISOString(),
@@ -136,7 +147,7 @@ export function seedHistory(db: DemoDb) {
     db.history.push({
       id: nextId(db),
       seriesId: series.id,
-      episodeId: episode.id,
+      workId: work.id,
       sourceTitle: title,
       quality: file.quality,
       date: new Date(imported).toISOString(),
@@ -145,9 +156,9 @@ export function seedHistory(db: DemoDb) {
         downloadClient: 'SABnzbd',
         downloadClientName: 'SABnzbd',
         droppedPath: `/data/downloads/usenet/complete/${title}`,
-        importedPath: `${seriesPath(series)}/Season ${
-          episode.seasonNumber
-        }/${title}.mkv`,
+        importedPath: `${seriesPath(series)}/Volume ${
+          file.volumeNumber
+        }/${title}.cbz`,
         size: String(file.size),
       },
     });
@@ -157,25 +168,26 @@ export function seedHistory(db: DemoDb) {
 }
 
 export function seedBlocklist(db: DemoDb) {
-  const series = db.series.find((s) => s.tvdbId === 289590);
-  const episode = db.episodes.find(
-    (e) =>
-      e.seriesId === series?.id && e.seasonNumber === 1 && e.episodeNumber === 1
+  const series = db.series.find(
+    (s) => s.foreignSeriesId === '3e4b8dbd-8af1-8056-a8ae-b8643731a45a'
+  );
+  const work = db.works.find(
+    (e) => e.seriesId === series?.id && e.volumeNumber === 1 && e.number === 1
   );
 
-  if (!series || !episode) {
+  if (!series || !work || !work.releaseDateUtc) {
     return;
   }
 
   db.blocklist.push({
     id: nextId(db),
     seriesId: series.id,
-    episodeIds: [episode.id],
-    sourceTitle: `${sceneName(series, episode)}.1080p.BluRay.x264-SALT`,
-    quality: 'Bluray-1080p',
+    workIds: [work.id],
+    sourceTitle: `${sceneName(series, work)}.Retail.HQ-SALT`,
+    quality: 'Retail HQ',
     protocol: 'usenet',
     indexer: INDEXERS[1].name,
     message: 'Unpacking failed, missing repair blocks',
-    date: new Date(Date.parse(episode.airDateUtc) + 3 * HOUR).toISOString(),
+    date: new Date(Date.parse(work.releaseDateUtc) + 3 * HOUR).toISOString(),
   });
 }

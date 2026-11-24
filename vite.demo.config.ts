@@ -11,7 +11,7 @@ export default defineConfig({
     lib: {
       entry: path.resolve(import.meta.dirname, 'frontend/src/DemoApi/index.ts'),
       formats: ['iife'],
-      name: 'SonarrDemoApi',
+      name: 'OcularrDemoApi',
       fileName: () => 'demo-api.js',
     },
   },

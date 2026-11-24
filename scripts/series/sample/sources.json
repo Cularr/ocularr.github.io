@@ -1,0 +1,80 @@
+[
+  {
+    "code": "comicvine",
+    "title": "Comic Vine",
+    "text": "Modified metadata from [Comic Vine](https://comicvine.gamespot.com/), subject to its [terms of use](https://comicvine.gamespot.com/api/). [Contribute to Comic Vine](https://comicvine.gamespot.com/forums/editing-tools-2761/wiki-guidebook-on-where-to-help-2048627/).",
+    "iconUrl": "/demo/SourceIcons/comicvine.cfd071f384.svg"
+  },
+  {
+    "code": "gcd",
+    "title": "Grand Comics Database",
+    "text": "Modified metadata from [Grand Comics Database](https://www.comics.org/) licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Cover images are excluded by that licence. [Support GCD](https://www.comics.org/donate/).",
+    "iconUrl": "/demo/SourceIcons/gcd.d7f860e2c4.svg"
+  },
+  {
+    "code": "jajanken",
+    "title": "jajanken",
+    "text": "Modified metadata from [jajanken](https://www.jajanken.net/). Third-party data follows its [source's terms](https://www.jajanken.net/about).",
+    "iconUrl": "/demo/SourceIcons/jajanken.87eac449ba.svg"
+  },
+  {
+    "code": "jumpfinder",
+    "title": "JumpFinder",
+    "text": "Modified metadata from [JumpFinder](https://jumpfinder.com/) and the contributors of the [Jump Wiki on Fandom](https://jump.fandom.com/), licensed under [CC BY-SA](https://www.fandom.com/licensing).",
+    "iconUrl": "/demo/SourceIcons/jumpfinder.d52dccb5e7.png"
+  },
+  {
+    "code": "mangabaka",
+    "title": "MangaBaka",
+    "text": "Modified metadata from [MangaBaka](https://mangabaka.org/) licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Third-party data follows its source's terms. [Support MangaBaka](https://opencollective.com/mangabaka/donate).",
+    "iconUrl": "/demo/SourceIcons/mangabaka.d27ea6002a.png"
+  },
+  {
+    "code": "mangadb",
+    "title": "MangaDB",
+    "text": "Modified metadata from [MangaDB](https://mangadb.org/). Third-party data follows its [source's terms](https://mangadb.org/about-the-data). Encyclopedia data provided by [Anime News Network](https://www.animenewsnetwork.com/). [Contribute to MangaDB](https://mangadb.org/about-the-data#corrections).",
+    "iconUrl": "/demo/SourceIcons/mangadb.8f7c4a0a22.svg"
+  },
+  {
+    "code": "mangadex",
+    "title": "MangaDex",
+    "text": "Modified metadata from [MangaDex](https://mangadex.org/) used under its [API usage policy](https://gitlab.com/mangadex-pub/mangadex-api-docs/-/blob/main/index.md). [Copyright notice](https://mangadex.org/copyright). [Support MangaDex](https://mangadex.org/support-us).",
+    "iconUrl": "/demo/SourceIcons/mangadex.da7ef0d7e1.svg"
+  },
+  {
+    "code": "mangaupdates",
+    "title": "MangaUpdates",
+    "text": "Modified metadata from [MangaUpdates](https://www.mangaupdates.com/) used under its [API acceptable use policy](https://api.mangaupdates.com/#section/Acceptable-Use-Policy).",
+    "iconUrl": "/demo/SourceIcons/mangaupdates.d4f7a4d9ad.svg"
+  },
+  {
+    "code": "mediaarts",
+    "title": "Media Arts Database",
+    "text": "Modified metadata from [Media Arts Database](https://mediaarts-db.artmuseums.go.jp/) freely reusable under the [dataset terms](https://github.com/mediaarts-db/dataset#12-%E3%83%87%E3%83%BC%E3%82%BF%E3%82%BB%E3%83%83%E3%83%88%E3%81%AE%E6%A8%A9%E5%88%A9). Provided by the National Center for Art Research, Japan. [Support the National Museum of Art](https://www.artmuseums.go.jp/en/support).",
+    "iconUrl": "/demo/SourceIcons/mediaarts.c72dbaabde.svg"
+  },
+  {
+    "code": "metron",
+    "title": "Metron",
+    "text": "Modified metadata from [Metron](https://metron.cloud/) licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Cover images are excluded by that licence. [Support Metron](https://opencollective.com/metron).",
+    "iconUrl": "/demo/SourceIcons/metron.fccb849818.svg"
+  },
+  {
+    "code": "opentome",
+    "title": "OpenTome",
+    "text": "Modified metadata from [OpenTome](https://opentomedb.com/) licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). Third-party data follows its [source's terms](https://opentomedb.com/data/). [Support OpenTome](https://opentomedb.com/contribute/).",
+    "iconUrl": "/demo/SourceIcons/opentome.4bd9602e6b.svg"
+  },
+  {
+    "code": "feeds",
+    "title": "Release Feeds",
+    "text": "Contains release data from public release feeds, compiled and modified by Gutter. Each feed's own terms govern the data that came from it.",
+    "iconUrl": "/demo/SourceIcons/feeds.561e908061.svg"
+  },
+  {
+    "code": "versedb",
+    "title": "VerseDB",
+    "text": "Modified metadata from [VerseDB](https://versedb.com/) used under its [API terms](https://versedb.com/policy/terms). Comic book data from [VerseDB](https://versedb.com/).",
+    "iconUrl": "/demo/SourceIcons/versedb.27a4d0d973.svg"
+  }
+]

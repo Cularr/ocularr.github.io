@@ -3,9 +3,9 @@ import { QUALITIES, QualityDefinition } from './definitions';
 import { getQuality, qualityInfo, qualityWeight, sizes } from './model';
 
 export const PROFILE_IDS = {
-  hd1080p: 4,
-  ultraHd: 5,
-  hd720p1080p: 6,
+  medium: 4,
+  high: 5,
+  ultra: 6,
 };
 
 export function defaultQualityProfile(
@@ -20,10 +20,10 @@ export function defaultQualityProfile(
   let cutoffId = getQuality(cutoff).id;
 
   QUALITIES.forEach((quality) => {
-    groups.set(quality.weight, [
-      ...(groups.get(quality.weight) ?? []),
-      quality,
-    ]);
+    const group = ['unknown', 'cam', 'master'].includes(quality.source)
+      ? -quality.weight
+      : Math.floor(quality.weight / 10);
+    groups.set(group, [...(groups.get(group) ?? []), quality]);
   });
 
   groups.forEach((group) => {
@@ -65,6 +65,7 @@ export function defaultQualityProfile(
     id,
     name,
     upgradeAllowed: false,
+    partialUpgradeAllowed: false,
     cutoff: cutoffId,
     items,
     minFormatScore: 0,
@@ -76,63 +77,67 @@ export function defaultQualityProfile(
 
 export function defaultQualityProfiles(): JsonObject[] {
   return [
-    defaultQualityProfile(1, 'Any', 'SDTV', [
-      'SDTV',
-      'WEBRip-480p',
-      'WEBDL-480p',
-      'DVD',
-      'Bluray-480p',
-      'Bluray-576p',
-      'HDTV-720p',
-      'HDTV-1080p',
-      'WEBRip-720p',
-      'WEBDL-720p',
-      'WEBRip-1080p',
-      'WEBDL-1080p',
-      'Bluray-720p',
-      'Bluray-1080p',
+    defaultQualityProfile(1, 'Any', 'WebRip LQ', [
+      'WebRip LQ',
+      'Scan LQ',
+      'Retail LQ',
+      'Hybrid LQ',
+      'Digital LQ',
+      'WebRip MQ',
+      'Scan MQ',
+      'Retail MQ',
+      'Hybrid MQ',
+      'Digital MQ',
+      'WebRip HQ',
+      'Scan HQ',
+      'Retail HQ',
+      'Hybrid HQ',
+      'Digital HQ',
+      'Scan UHQ',
+      'Retail UHQ',
+      'Hybrid UHQ',
+      'Digital UHQ',
     ]),
-    defaultQualityProfile(2, 'SD', 'SDTV', [
-      'SDTV',
-      'WEBRip-480p',
-      'WEBDL-480p',
-      'DVD',
-      'Bluray-480p',
-      'Bluray-576p',
+    defaultQualityProfile(2, 'ELQ', 'Scan ELQ', ['Scan ELQ', 'WebRip ELQ']),
+    defaultQualityProfile(3, 'LQ', 'WebRip LQ', [
+      'WebRip LQ',
+      'Scan LQ',
+      'Retail LQ',
+      'Hybrid LQ',
+      'Digital LQ',
     ]),
-    defaultQualityProfile(3, 'HD-720p', 'HDTV-720p', [
-      'HDTV-720p',
-      'WEBRip-720p',
-      'WEBDL-720p',
-      'Bluray-720p',
+    defaultQualityProfile(4, 'MQ', 'WebRip MQ', [
+      'WebRip MQ',
+      'Scan MQ',
+      'Retail MQ',
+      'Hybrid MQ',
+      'Digital MQ',
     ]),
-    defaultQualityProfile(PROFILE_IDS.hd1080p, 'HD-1080p', 'HDTV-1080p', [
-      'HDTV-1080p',
-      'WEBRip-1080p',
-      'WEBDL-1080p',
-      'Bluray-1080p',
+    defaultQualityProfile(5, 'HQ', 'WebRip HQ', [
+      'WebRip HQ',
+      'Scan HQ',
+      'Retail HQ',
+      'Hybrid HQ',
+      'Digital HQ',
     ]),
-    defaultQualityProfile(PROFILE_IDS.ultraHd, 'Ultra-HD', 'HDTV-2160p', [
-      'HDTV-2160p',
-      'WEBRip-2160p',
-      'WEBDL-2160p',
-      'Bluray-2160p',
+    defaultQualityProfile(6, 'UHQ', 'Scan UHQ', [
+      'Scan UHQ',
+      'Retail UHQ',
+      'Hybrid UHQ',
+      'Digital UHQ',
     ]),
-    defaultQualityProfile(
-      PROFILE_IDS.hd720p1080p,
-      'HD - 720p/1080p',
-      'HDTV-720p',
-      [
-        'HDTV-720p',
-        'HDTV-1080p',
-        'WEBRip-720p',
-        'WEBDL-720p',
-        'WEBRip-1080p',
-        'WEBDL-1080p',
-        'Bluray-720p',
-        'Bluray-1080p',
-      ]
-    ),
+    defaultQualityProfile(7, 'MQ & HQ', 'WebRip MQ', [
+      'WebRip MQ',
+      'Scan MQ',
+      'Retail MQ',
+      'Hybrid MQ',
+      'Digital MQ',
+      'WebRip HQ',
+      'Scan HQ',
+      'Retail HQ',
+      'Hybrid HQ',
+      'Digital HQ',
+    ]),
   ];
 }
 

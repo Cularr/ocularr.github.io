@@ -13,14 +13,16 @@ import {
 import path from 'path';
 import { URL_BASE } from '../frontend/src/DemoApi/constants.ts';
 import extractProviders from './extractProviders.mts';
-import fetchShows from './fetchShows.mts';
+import fetchSeries from './fetchSeries.mts';
 import finalizeDemo from './finalizeDemo.mts';
 
 const root = path.resolve(import.meta.dirname, '..');
-const sonarrRef =
-  process.env.SONARR_REF ?? 'b3d4bb8c18f7feb6744a6cd3231279a45351bb5e';
-const sonarrDir =
-  process.env.SONARR_SOURCE ?? path.join(root, '.cache', 'sonarr');
+const ocularrRef = process.env.OCULARR_REF ?? 'develop';
+const sibling = path.resolve(root, '../Ocularr');
+const localSource =
+  process.env.OCULARR_SOURCE ??
+  (existsSync(path.join(sibling, '.git')) ? sibling : undefined);
+const ocularrDir = localSource ?? path.join(root, '.cache', 'ocularr');
 const finalDir = path.join(root, 'demo');
 const demoDir = path.join(root, '.demo-build');
 const isWindows = process.platform === 'win32';
@@ -60,48 +62,58 @@ function output(command: string, args: string[], cwd: string) {
 
 function currentCommit() {
   try {
-    return output('git', ['rev-parse', 'HEAD'], sonarrDir);
+    return output('git', ['rev-parse', 'HEAD'], ocularrDir);
   } catch {
     return '';
   }
 }
 
-if (!process.env.SONARR_SOURCE) {
-  if (!existsSync(path.join(sonarrDir, '.git'))) {
-    mkdirSync(sonarrDir, { recursive: true });
-    run('git', ['init', '--quiet'], sonarrDir);
-    run(
-      'git',
-      ['remote', 'add', 'origin', 'https://github.com/Sonarr/Sonarr.git'],
-      sonarrDir
-    );
-  }
-
-  if (!currentCommit().startsWith(sonarrRef)) {
-    run('git', ['fetch', '--depth', '1', 'origin', sonarrRef], sonarrDir);
-    run('git', ['checkout', '--quiet', '--force', 'FETCH_HEAD'], sonarrDir);
-  }
+if (!localSource) {
+  mkdirSync(ocularrDir, { recursive: true });
+  run('git', ['init', '--quiet'], ocularrDir);
+  run(
+    'git',
+    [
+      'fetch',
+      '--depth',
+      '1',
+      'https://github.com/Cularr/Ocularr.git',
+      ocularrRef,
+    ],
+    ocularrDir
+  );
+  run('git', ['checkout', '--quiet', '--detach', 'FETCH_HEAD'], ocularrDir);
+} else if (
+  currentCommit() !== output('git', ['rev-parse', ocularrRef], ocularrDir)
+) {
+  throw new Error(`Expected ${ocularrRef} in ${ocularrDir}`);
 }
 
-const sonarrCommit = currentCommit();
+const ocularrCommit = currentCommit();
+console.log(`Building the demo from Ocularr ${ocularrRef} (${ocularrCommit})`);
 
-if (!process.env.SONARR_SOURCE && !sonarrCommit.startsWith(sonarrRef)) {
-  throw new Error(`Expected Sonarr ${sonarrRef} but found ${sonarrCommit}`);
+const vite = path.join(ocularrDir, 'node_modules/vite/bin/vite.js');
+
+if (!localSource || !existsSync(vite)) {
+  run(
+    'corepack',
+    [
+      'yarn',
+      'install',
+      '--frozen-lockfile',
+      '--ignore-engines',
+      '--ignore-scripts',
+    ],
+    ocularrDir
+  );
 }
 
-console.log(`Building the demo from Sonarr ${sonarrCommit}`);
+run(process.execPath, [vite, 'build'], ocularrDir);
 
-run(
-  'yarn',
-  ['install', '--frozen-lockfile', '--ignore-engines', '--ignore-scripts'],
-  sonarrDir
-);
-run(path.join(sonarrDir, 'node_modules', '.bin', 'vite'), ['build'], sonarrDir);
-
-const sonarrOutput = path.join(sonarrDir, '_output', 'UI');
+const ocularrOutput = path.join(ocularrDir, '_output', 'UI');
 
 rmSync(demoDir, { recursive: true, force: true });
-cpSync(sonarrOutput, demoDir, {
+cpSync(ocularrOutput, demoDir, {
   recursive: true,
   filter: (source) =>
     !source.endsWith('.map') &&
@@ -109,12 +121,12 @@ cpSync(sonarrOutput, demoDir, {
       path.basename(source)
     ) &&
     !UNUSED_FILES.includes(
-      path.relative(sonarrOutput, source).split(path.sep).join('/')
+      path.relative(ocularrOutput, source).split(path.sep).join('/')
     ),
 });
 
 const localizationSource = path.join(
-  sonarrDir,
+  ocularrDir,
   'src/NzbDrone.Core/Localization/Core'
 );
 const localizationDir = path.join(demoDir, 'localization');
@@ -144,6 +156,7 @@ const indexPath = path.join(demoDir, 'index.html');
 const index = readFileSync(indexPath, 'utf8')
   .replace(/\r\n/g, '\n')
   .replace(/__URL_BASE__/g, URL_BASE)
+  .replace('href="/favicon.ico"', 'href="/Content/Images/Icons/favicon.ico"')
   .replace("'_THEME_'", themeScript)
   .replace(/^[ \t]*__MINI_PROFILER__[ \t]*\n/m, '')
   .replace(/(href|src|content)="\/(?!\/)/g, `$1="${URL_BASE}/`)
@@ -152,8 +165,8 @@ const index = readFileSync(indexPath, 'utf8')
     `<script src="${URL_BASE}/demo-api.js"></script>\n    <script type="module"`
   )
   .replace(
-    '<meta name="description" content="Sonarr" />',
-    `<meta name="description" content="Sonarr demo with sample data" />\n    <meta name="robots" content="noindex" />\n    <meta name="sonarr-commit" content="${sonarrCommit}" />`
+    '<meta name="description" content="Ocularr" />',
+    `<meta name="description" content="Ocularr demo with sample data" />\n    <meta name="robots" content="noindex" />\n    <meta name="ocularr-commit" content="${ocularrCommit}" />`
   );
 
 const scriptHashes = Array.from(
@@ -193,10 +206,10 @@ const redirectPage = `<!doctype html>
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="refresh" content="0; url=${URL_BASE}/" />
-    <title>Sonarr</title>
+    <title>Ocularr</title>
   </head>
   <body>
-    <a href="${URL_BASE}/">Back to the Sonarr demo</a>
+    <a href="${URL_BASE}/">Back to the Ocularr demo</a>
   </body>
 </html>
 `;
@@ -206,9 +219,9 @@ const redirectPage = `<!doctype html>
   writeFileSync(path.join(demoDir, name, 'index.html'), redirectPage);
 });
 
-extractProviders(sonarrDir, path.join(demoDir, 'providers.json'));
+extractProviders(ocularrDir, path.join(demoDir, 'providers.json'));
 
-await fetchShows(demoDir, { artworkFrom: finalDir });
+await fetchSeries(demoDir, { artworkFrom: finalDir });
 
 run(
   path.join(root, 'node_modules', '.bin', 'vite'),

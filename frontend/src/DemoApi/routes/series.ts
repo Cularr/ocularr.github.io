@@ -3,11 +3,16 @@ import { JsonObject } from '../DemoTypes';
 import {
   addSeriesFromBody,
   deleteSeries,
-  setSeasonMonitored,
+  setVolumeMonitored,
   updateSeries,
 } from '../operations/series';
 import { lookupResource, seriesResource } from '../resources/series';
-import { applyMonitor, catalogShows, toDemoSeries } from '../state/catalog';
+import {
+  applyMonitor,
+  catalogSeries,
+  readMonitorType,
+  toDemoSeries,
+} from '../state/catalog';
 import { folderName, seriesPath } from '../state/paths';
 import { findSeries } from '../state/queries';
 import { DemoDb } from '../state/store';
@@ -16,30 +21,32 @@ import { arrayBody, idsFrom, objectBody, Route } from './request';
 
 function lookup(db: DemoDb, term: string) {
   const normalized = term.trim().toLowerCase();
-  const tvdbMatch = /^tvdb:\s*(\d+)$/.exec(normalized);
 
-  return catalogShows()
-    .filter((show) =>
-      tvdbMatch
-        ? show.tvdbId === Number(tvdbMatch[1])
-        : !normalized || show.title.toLowerCase().includes(normalized)
+  return catalogSeries()
+    .filter(
+      (seriesData) =>
+        seriesData.foreignSeriesId === normalized ||
+        seriesData.title.toLowerCase().includes(normalized) ||
+        (seriesData.metadata.externalLinks as JsonObject[]).some(
+          (link) =>
+            link.name === 'Grand Comics Database' &&
+            normalized === `gcd:${link.externalId}`
+        )
     )
-    .map((show) => {
-      const existing = db.series.find((s) => s.tvdbId === show.tvdbId);
+    .map((seriesData) => {
+      const existing = db.series.find(
+        (s) => s.foreignSeriesId === seriesData.foreignSeriesId
+      );
 
       if (existing) {
         return seriesResource(db, existing);
       }
 
       return {
-        ...lookupResource(
-          toDemoSeries(show, 0),
-          Array.from(new Set(show.episodes.map((e) => e.seasonNumber))).sort(
-            (a, b) => a - b
-          )
-        ),
+        ...lookupResource(toDemoSeries(seriesData, 0)),
         isExcluded: db.collections.importlistexclusion.some(
-          (exclusion) => exclusion.tvdbId === show.tvdbId
+          (exclusion) =>
+            exclusion.foreignSeriesId === seriesData.foreignSeriesId
         ),
       };
     });
@@ -50,10 +57,12 @@ export const seriesRoutes: Route[] = [
     method: 'GET',
     pattern: /^\/series$/,
     handler: (db, request) => {
-      const tvdbId = Number(request.query.get('tvdbId') ?? 0);
+      const foreignSeriesId = request.query.get('foreignSeriesId');
 
       return db.series
-        .filter((s) => !tvdbId || s.tvdbId === tvdbId)
+        .filter(
+          (s) => !foreignSeriesId || s.foreignSeriesId === foreignSeriesId
+        )
         .map((s) => seriesResource(db, s));
     },
   },
@@ -104,17 +113,17 @@ export const seriesRoutes: Route[] = [
     method: 'GET',
     pattern: /^\/series\/(\d+)$/,
     handler: (db, _request, [id]) => {
-      const series = findSeries(db, id);
+      const series = findSeries(db, Number(id));
 
       return series ? seriesResource(db, series) : undefined;
     },
   },
   {
     method: 'PUT',
-    pattern: /^\/series\/(\d+)$/,
+    pattern: /^\/series(?:\/(\d+))?$/,
     status: 202,
     handler: (db, request, [id]) => {
-      const series = findSeries(db, id);
+      const series = findSeries(db, id ?? Number(objectBody(request).id));
 
       return series ? updateSeries(db, series, objectBody(request)) : undefined;
     },
@@ -123,7 +132,7 @@ export const seriesRoutes: Route[] = [
     method: 'DELETE',
     pattern: /^\/series\/(\d+)$/,
     handler: (db, request, [id]) => {
-      const series = findSeries(db, id);
+      const series = findSeries(db, Number(id));
 
       if (!series) {
         return undefined;
@@ -140,21 +149,23 @@ export const seriesRoutes: Route[] = [
   },
   {
     method: 'PUT',
-    pattern: /^\/series\/(\d+)\/season$/,
+    pattern: /^\/series\/(\d+)\/volume$/,
     handler: (db, request, [id]) => {
-      const series = findSeries(db, id);
+      const series = findSeries(db, Number(id));
       const body = objectBody(request);
 
       if (!series) {
         return undefined;
       }
 
-      setSeasonMonitored(
-        db,
-        series,
-        Number(body.seasonNumber),
-        body.monitored !== false
-      );
+      const works = db.works.filter((e) => e.seriesId === series.id);
+
+      if (
+        !setVolumeMonitored(db, works, body.workId, body.monitored !== false)
+      ) {
+        return undefined;
+      }
+
       broadcast('series', 'updated', seriesResource(db, series));
 
       return body;
@@ -164,7 +175,7 @@ export const seriesRoutes: Route[] = [
     method: 'GET',
     pattern: /^\/series\/(\d+)\/folder$/,
     handler: (db, _request, [id]) => {
-      const series = findSeries(db, id);
+      const series = findSeries(db, Number(id));
 
       return series
         ? {
@@ -176,10 +187,10 @@ export const seriesRoutes: Route[] = [
   },
   {
     method: 'POST',
-    pattern: /^\/seasonpass$/,
+    pattern: /^\/volumepass$/,
     handler: (db, request) => {
       const body = objectBody(request);
-      const monitor = String(
+      const monitor = readMonitorType(
         ((body.monitoringOptions ?? {}) as JsonObject).monitor ?? ''
       );
 
@@ -194,14 +205,34 @@ export const seriesRoutes: Route[] = [
           series.monitored = item.monitored;
         }
 
-        if (monitor && monitor !== 'skip') {
-          applyMonitor(db, series, monitor);
-          broadcast('series', 'updated', seriesResource(db, series));
-        } else {
-          updateSeries(db, series, {
-            seasons: Array.isArray(item.seasons) ? item.seasons : [],
-          });
+        if (Array.isArray(item.volumes)) {
+          const works = db.works.filter((work) => work.seriesId === series.id);
+
+          for (const volume of item.volumes) {
+            if (
+              volume &&
+              typeof volume === 'object' &&
+              !Array.isArray(volume)
+            ) {
+              setVolumeMonitored(
+                db,
+                works,
+                volume.workId,
+                volume.monitored === true
+              );
+            }
+          }
         }
+
+        if (monitor === 'none') {
+          series.monitored = false;
+        }
+
+        if (monitor) {
+          applyMonitor(db, series, monitor);
+        }
+
+        broadcast('series', 'updated', seriesResource(db, series));
       });
 
       return {};

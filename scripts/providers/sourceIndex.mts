@@ -140,8 +140,8 @@ function readLanguageOptions(coreDir: string): ProviderSelectOption[] {
     );
 }
 
-export function buildSourceIndex(sonarrDir: string): SourceIndex {
-  const coreDir = path.join(sonarrDir, 'src', 'NzbDrone.Core');
+export function buildSourceIndex(ocularrDir: string): SourceIndex {
+  const coreDir = path.join(ocularrDir, 'src', 'NzbDrone.Core');
   const index: SourceIndex = {
     coreDir,
     classes: new Map(),

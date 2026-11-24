@@ -2,7 +2,6 @@ import { ResponseError } from '../responseError';
 import { DemoDb } from '../state/store';
 import { activityRoutes } from './activity';
 import { collectionRoute } from './collections';
-import { episodeRoutes } from './episodes';
 import {
   DemoRequest,
   DemoResponse,
@@ -14,10 +13,11 @@ import { searchRoutes } from './search';
 import { seriesRoutes } from './series';
 import { settingsRoutes } from './settings';
 import { systemRoutes } from './system';
+import { workRoutes } from './works';
 
 const routes: Route[] = [
   ...seriesRoutes,
-  ...episodeRoutes,
+  ...workRoutes,
   ...activityRoutes,
   ...searchRoutes,
   ...settingsRoutes,
